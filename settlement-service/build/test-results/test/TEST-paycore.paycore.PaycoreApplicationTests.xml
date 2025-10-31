@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="paycore.paycore.PaycoreApplicationTests" tests="1" skipped="0" failures="0" errors="0" timestamp="2025-10-31T05:14:11.765Z" hostname="VTPLui-MacBookAir.local" time="0.48">
+  <properties/>
+  <testcase name="contextLoads()" classname="paycore.paycore.PaycoreApplicationTests" time="0.48"/>
+  <system-out><![CDATA[14:14:10.909 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [paycore.paycore.PaycoreApplicationTests]: PaycoreApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+14:14:10.963 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration paycore.paycore.SettlementApplication for test class paycore.paycore.PaycoreApplicationTests
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.5)
+
+2025-10-31T14:14:11.164+09:00  INFO 10396 --- [paycore] [    Test worker] p.paycore.PaycoreApplicationTests        : Starting PaycoreApplicationTests using Java 17.0.15 with PID 10396 (started by vtpl in /Users/vtpl/Desktop/Paycore/paycore/settlement-service)
+2025-10-31T14:14:11.165+09:00  INFO 10396 --- [paycore] [    Test worker] p.paycore.PaycoreApplicationTests        : No active profile set, falling back to 1 default profile: "default"
+2025-10-31T14:14:11.756+09:00  INFO 10396 --- [paycore] [    Test worker] p.paycore.PaycoreApplicationTests        : Started PaycoreApplicationTests in 0.72 seconds (process running for 1.338)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

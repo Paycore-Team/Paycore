@@ -1,0 +1,9 @@
+rootProject.name = 'paycore'
+
+include(
+        "common",
+        "order-service",
+        "payment-service",
+        "settlement-service",
+        "notification-service"
+)
