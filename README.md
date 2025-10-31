@@ -43,7 +43,12 @@
 > **Outbox 테이블 구조**
 > - Outbox DB에 `sagaId`와 엔티티의 **PK**를 함께 저장  
 > - 이는 보상 트랜잭션(Saga Compensation) 수행 시 어떤 로직을 롤백해야 하는지를 추적하기 위함  
-> - 또한 **Transaction Outbox Pattern**을 적용해 DB 트랜잭션과 이벤트 발행의 **원자성(Atomicity)** 을 보장 
+> - 또한 **Transaction Outbox Pattern**을 적용해 DB 트랜잭션과 이벤트 발행의 **원자성(Atomicity)** 을 보장
+
+> **RabbitMQ를 선택한 이유 (Kafka 대신)**
+> - 프로젝트의 이벤트 규모가 상대적으로 작고, **실시간 트랜잭션 처리 중심 구조**이기 때문  
+> - RabbitMQ는 **Low Latency / High Throughput** 환경에서 메시지 순서 보장과 즉각적 ACK 관리가 용이  
+> - 향후 대규모 트래픽(대용량 로그, 이벤트 스트리밍)으로 확장 시 Kafka로 전환 예정  
 ---
 
 </details>
