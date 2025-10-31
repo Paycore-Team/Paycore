@@ -8,19 +8,19 @@ group = 'com.paycore.notificationservice'
 version = '0.0.1-SNAPSHOT'
 
 dependencies {
-    // ✅ 필수 Spring Boot 의존성
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
-    // ✅ 필요 시 추가 (JPA, Redis 등)
-    // implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    // implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    runtimeOnly 'org.postgresql:postgresql'
 }
 
 springBoot {
-    mainClass = 'paycore.paycore.NotificationApplication'
+    mainClass = 'paycore.paycore.PaymentApplication'
 }
 
 java {

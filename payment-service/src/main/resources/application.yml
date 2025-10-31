@@ -1,0 +1,28 @@
+server:
+  port: ${SERVER_PORT:8082}
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/paymentdb}
+    username: ${SPRING_DATASOURCE_USERNAME:paymentuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:paymentpass}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    properties:
+      hibernate:
+        dialect: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+    show-sql: true
+    open-in-view: false
+
+  sql:
+    init:
+      mode: always
+      platform: postgres
+
+logging:
+  level:
+    org.springframework: INFO
+    org.hibernate.SQL: DEBUG

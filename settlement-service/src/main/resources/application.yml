@@ -1,0 +1,28 @@
+server:
+  port: ${SERVER_PORT:8084}
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5436/settlementdb}
+    username: ${SPRING_DATASOURCE_USERNAME:settlementuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:settlementpass}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    properties:
+      hibernate:
+        dialect: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+    show-sql: true
+    open-in-view: false
+
+  sql:
+    init:
+      mode: always
+      platform: postgres
+
+logging:
+  level:
+    org.springframework: INFO
+    org.hibernate.SQL: DEBUG
