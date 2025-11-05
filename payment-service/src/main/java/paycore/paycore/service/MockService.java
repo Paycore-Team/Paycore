@@ -16,6 +16,14 @@ import java.util.Optional;
 
 @Service
 public class MockService implements MockUseCase {
+    /**
+     * 주어진 요청에 대해 실제 I/O를 수행하지 않고 미리 정의된 모의 HTTP 응답을 생성하여 래핑된 응답을 반환합니다.
+     *
+     * 생성된 모의 응답은 HTTP 상태 코드 200, 본문 {"ok":true}, URI "https://mock.service.local" 및 HTTP/1.1 버전을 가집니다.
+     *
+     * @param input 모의 응답을 생성할 때 참조할 요청 정보
+     * @return 생성된 모의 `HttpResponse<String>`을 포함하는 `MockServiceResponse`
+     */
     @Override
     public MockServiceResponse execute(MockServiceRequest input) {
         HttpResponse<String> httpResponse = new HttpResponse<>() {
