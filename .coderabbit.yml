@@ -148,7 +148,7 @@ code_generation:
   docstrings:
     language: ko-KR
     path_instructions:
-      - path:  src/**
+      - path:  "**/src/**"
         instructions: |
           - JavaDoc 공식 형식으로, 한글로 Docstring을 작성해주세요.
           - 메서드 목적, 파라미터, 반환값, 예외 정보를 명확하게 기술해 주세요.
