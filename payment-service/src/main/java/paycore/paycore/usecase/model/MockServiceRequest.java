@@ -1,12 +1,14 @@
-package paycore.paycore.dto;
+package paycore.paycore.usecase.model;
 
-public record MockServiceRequestDto(
+import java.math.BigDecimal;
+
+public record MockServiceRequest(
         String apiKey,
         String orderNo,
         String productDesc,
         String retUrl,
         String retCancelUrl,
-        long amount,
+        BigDecimal amount,
         long amountTaxFree
 ) {
 }
