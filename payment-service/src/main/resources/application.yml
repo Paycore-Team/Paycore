@@ -33,6 +33,12 @@ spring:
       simple:
         acknowledge-mode: auto
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: 6379
+      password: ${REDIS_PASSWORD:redispasswd}
+
 logging:
   level:
     org.springframework: INFO
