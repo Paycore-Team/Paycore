@@ -22,6 +22,17 @@ spring:
       mode: always
       platform: postgres
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: 5672
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: /
+    connection-timeout: 5s
+    listener:
+      simple:
+        acknowledge-mode: auto
+
 logging:
   level:
     org.springframework: INFO

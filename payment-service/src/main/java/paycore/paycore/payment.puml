@@ -1,0 +1,80 @@
+@startuml
+package "Payment Service" {
+
+  class Payment{
+    +paymentId: UUID
+    +amount: BigDecimal
+    +status: PaymentStatus
+    +store: Store
+    +createdAt: LocalDateTime = LocalDateTime.now()
+  }
+
+  class PaymentOutbox {
+      +sagaId: UUID
+      +paymentId: UUID
+      +status: OutboxStatus
+      +eventType: EventType
+      +payload: String
+      +createdAt: LocalDateTime = LocalDateTime.now()
+  }
+
+  interface UseCase<I, O> {
+      +O execute(I input)
+  }
+
+  class UseCase::Exception {
+      +Exception(message: String)
+  }
+
+  class PaymentMessageListener {
+    - paymentService: PaymentService
+
+    +onMessage(input: PaymentService.Input): PaymentService.Output
+  }
+
+  class PaymentService {
+    - mockService: MockService
+    - paymentPersistenceService: PaymentPersistenceService
+
+    + execute(input: PaymentService.Input): PaymentService.Output
+  }
+
+  class PaymentPersistenceService {
+    - paymentRepository: PaymentRepository
+    - paymentOutboxRepository: PaymentOutboxRepository
+
+    + execute(PaymentPersistenceService.Input): PaymentPersistenceService.Output
+  }
+
+  interface JpaRepository {
+    + save()
+  }
+
+  interface PaymentRepository {
+    + save(order: Order)
+    + findById(orderId: UUID): Order
+  }
+
+  interface PaymentOutboxRepository {
+    + save(event: OrderOutbox)
+  }
+
+  class PG {
+    +pay()
+    +refund()
+  }
+
+  ' Relationships
+  Payment "1" -- "1*" PaymentOutbox : triggers
+  PaymentMessageListener --> PaymentService : invoke placePayment()
+  UseCase::Exception -up-|> RuntimeException
+  PaymentService <|-- UseCase
+  PaymentPersistenceService <|-- UseCase
+  PaymentService --> PaymentPersistenceService : persist Payment
+  PaymentService --> PG : pay
+  PaymentPersistenceService --> PaymentRepository : persist Payment
+  PaymentPersistenceService --> PaymentOutboxRepository : save Event
+  PaymentRepository <|-- JpaRepository
+  PaymentOutboxRepository <|-- JpaRepository
+}
+@enduml
