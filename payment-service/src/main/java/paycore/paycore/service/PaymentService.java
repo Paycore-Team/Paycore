@@ -1,61 +1,97 @@
 package paycore.paycore.service;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import paycore.paycore.common.UseCase;
-import paycore.paycore.dto.MockServiceRequestDto;
+import paycore.paycore.domain.IdempotencyKeyRecord;
+import paycore.paycore.domain.IdempotencyKeyStatus;
+import paycore.paycore.domain.IdempotencyResultResponse;
+import paycore.paycore.entity.IdempotencyKeyData;
+import paycore.paycore.repository.IdempotencyKeyRepository;
+import paycore.paycore.usecase.MockUseCase;
+import paycore.paycore.usecase.PaymentPersistenceUseCase;
+import paycore.paycore.usecase.PaymentUseCase;
+import paycore.paycore.usecase.model.MockServiceRequest;
+import paycore.paycore.usecase.model.MockServiceResponse;
+import paycore.paycore.usecase.model.PaymentPersistenceServiceRequest;
+import paycore.paycore.usecase.model.PaymentServiceRequest;
 
-import java.math.BigDecimal;
-import java.util.UUID;
-
+@Slf4j
+@RequiredArgsConstructor
 @Service
-public class PaymentService implements UseCase<PaymentService.Input, Void> {
-    private final MockService mockService;
-    private final PaymentPersistenceService paymentPersistenceService;
-
-    public PaymentService(
-            MockService mockService,
-            PaymentPersistenceService paymentPersistenceService) {
-        this.mockService = mockService;
-        this.paymentPersistenceService = paymentPersistenceService;
-    }
-
-    public record Input(
-            UUID sagaId,
-            String apiKey,
-            String orderNo,
-            String productDesc,
-            String retUrl,
-            String retCancelUrl,
-            long amount,
-            long amountTaxFree
-    ) {
-    }
+public class PaymentService implements PaymentUseCase {
+    private final MockUseCase mockUseCase;
+    private final PaymentPersistenceUseCase paymentPersistenceUseCase;
+    private final IdempotencyKeyRepository idempotencyKeyRepository;
 
     @Override
-    public Void execute(Input input) {
-        MockServiceRequestDto newMockServiceRequestDto = new MockServiceRequestDto(
-                input.apiKey,
-                input.orderNo,
-                input.productDesc,
-                input.retUrl,
-                input.retCancelUrl,
-                input.amount,
-                input.amountTaxFree
+    public Void execute(PaymentServiceRequest input) {
+        IdempotencyKeyRecord record = idempotencyKeyRepository.getStatus(input.idempotencyKey());
+        IdempotencyKeyStatus status = record.getStatus();
+
+        if (status == IdempotencyKeyStatus.LOCKED) {
+            throw new RecordAlreadyLeased();
+        }
+
+        if (status == IdempotencyKeyStatus.SUCCESS || status == IdempotencyKeyStatus.SERVER_ERROR || status == IdempotencyKeyStatus.CLIENT_ERROR) {
+            log.info("Idempotency key already exists\n {}", record.result());
+            return null;
+        }
+
+        Boolean locked = idempotencyKeyRepository.acquireLockIfAbsent(input.idempotencyKey());
+        if (!locked) {
+            throw new RecordAlreadyLeased();
+        }
+
+        MockServiceRequest newMockServiceRequest = new MockServiceRequest(
+                input.apiKey(),
+                input.orderNo(),
+                input.productDesc(),
+                input.retUrl(),
+                input.retCancelUrl(),
+                input.amount(),
+                input.amountTaxFree()
         );
-        MockService.Output result = mockService.execute(
-                new MockService.Input(newMockServiceRequestDto)
+        MockServiceResponse result = mockUseCase.execute(
+                newMockServiceRequest
         );
 
-        paymentPersistenceService.execute(
-                new PaymentPersistenceService.Input(
-                        input.sagaId,
+        paymentPersistenceUseCase.execute(
+                new PaymentPersistenceServiceRequest(
+                        input.sagaId(),
                         result.httpResponse().statusCode(),
                         result.httpResponse().body(),
-                        new BigDecimal("10.00"),
-                        "test_store"
+                        input.amount(),
+                        input.storeName()
                 )
         );
 
+        IdempotencyKeyData newIdempotencyKeyData = new IdempotencyKeyData(
+                result.httpResponse().statusCode(),
+                result.httpResponse().body()
+        );
+        IdempotencyResultResponse response = idempotencyKeyRepository.saveResultAndReleaseLock(input.idempotencyKey(), newIdempotencyKeyData, 15);
+        if (response.err() != null) {
+            if (response.err().equals("result_exists")) {
+                throw new ResultAlreadyExist();
+            }
+        }
+
+        log.info("Payment request succeeded.\nSagaId : {}\n, IdempotencyKey : {}\n, orderNo : {}\n", input.sagaId(), input.idempotencyKey(), input.orderNo());
+
         return null;
+    }
+
+    private class RecordAlreadyLeased extends UseCase.Exception {
+        public RecordAlreadyLeased() {
+            super("Resource is already leased by another process\n");
+        }
+    }
+
+    private class ResultAlreadyExist extends UseCase.Exception {
+        public ResultAlreadyExist() {
+            super("Result is already exist\n");
+        }
     }
 }

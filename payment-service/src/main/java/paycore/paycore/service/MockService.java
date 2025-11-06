@@ -1,8 +1,9 @@
 package paycore.paycore.service;
 
 import org.springframework.stereotype.Service;
-import paycore.paycore.common.UseCase;
-import paycore.paycore.dto.MockServiceRequestDto;
+import paycore.paycore.usecase.MockUseCase;
+import paycore.paycore.usecase.model.MockServiceRequest;
+import paycore.paycore.usecase.model.MockServiceResponse;
 
 import javax.net.ssl.SSLSession;
 import java.net.URI;
@@ -14,19 +15,9 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
-public class MockService implements UseCase<MockService.Input, MockService.Output> {
-    public record Input(
-            MockServiceRequestDto mockServiceRequestDto
-    ) {
-    }
-
-    public record Output(
-            HttpResponse<String> httpResponse
-    ) {
-    }
-
+public class MockService implements MockUseCase {
     @Override
-    public Output execute(Input input) {
+    public MockServiceResponse execute(MockServiceRequest input) {
         HttpResponse<String> httpResponse = new HttpResponse<>() {
             @Override
             public int statusCode() {
@@ -69,6 +60,6 @@ public class MockService implements UseCase<MockService.Input, MockService.Outpu
             }
         };
 
-        return new Output(httpResponse);
+        return new MockServiceResponse(httpResponse);
     }
 }

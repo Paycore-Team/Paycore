@@ -1,42 +1,27 @@
 package paycore.paycore.service;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import paycore.paycore.common.UseCase;
 import paycore.paycore.domain.OutboxStatus;
 import paycore.paycore.entity.PaymentEntity;
 import paycore.paycore.entity.PaymentOutboxEntity;
 import paycore.paycore.repository.PaymentOutboxRepository;
 import paycore.paycore.repository.PaymentRepository;
+import paycore.paycore.usecase.PaymentPersistenceUseCase;
+import paycore.paycore.usecase.model.PaymentPersistenceServiceRequest;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
-public class PaymentPersistenceService implements UseCase<PaymentPersistenceService.Input, Void> {
+@RequiredArgsConstructor
+public class PaymentPersistenceService implements PaymentPersistenceUseCase {
     private final PaymentRepository paymentRepository;
     private final PaymentOutboxRepository paymentOutboxRepository;
 
-    public PaymentPersistenceService(
-            PaymentRepository paymentRepository,
-            PaymentOutboxRepository paymentOutboxRepository
-    ) {
-        this.paymentRepository = paymentRepository;
-        this.paymentOutboxRepository = paymentOutboxRepository;
-    }
-
-    public record Input(
-            UUID sagaId,
-            int statusCode,
-            String body,
-            BigDecimal amount,
-            String storeName
-    ) {
-    }
-
     @Override
     @Transactional
-    public Void execute(Input input) {
+    public Void execute(PaymentPersistenceServiceRequest input) {
         UUID paymentId = UUID.randomUUID();
         PaymentEntity paymentEntity = new PaymentEntity(
                 paymentId,
@@ -45,7 +30,7 @@ public class PaymentPersistenceService implements UseCase<PaymentPersistenceServ
                 input.storeName()
         );
         PaymentOutboxEntity paymentOutboxEntity = new PaymentOutboxEntity(
-                input.sagaId,
+                input.sagaId(),
                 paymentId,
                 OutboxStatus.NEW,
                 input.statusCode(),
