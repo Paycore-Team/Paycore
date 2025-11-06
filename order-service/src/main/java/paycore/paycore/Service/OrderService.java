@@ -30,10 +30,18 @@ public class OrderService implements PlaceOrderUseCase {
     @Override
     @Transactional
     public OrderEntity execute(OrderRequestDto dto) {
+        OrderEntity existOrder = orderRepository.findByIdempotencyKey(dto.idempotencyKey());
+        if (existOrder != null) {
+            return existOrder;
+        }
+
         OrderEntity order = OrderEntity.builder()
-                .id(UUID.randomUUID())
                 .sagaId(UUID.randomUUID())
+                .idempotencyKey(dto.idempotencyKey())
+                .apiKey(dto.apiKey())
+                .productDesc(dto.productDesc())
                 .amount(dto.amount())
+                .amountTaxFree(dto.amountTaxFree())
                 .status(OrderStatus.PENDING)
                 .build();
 
