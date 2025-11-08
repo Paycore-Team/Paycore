@@ -1,12 +1,9 @@
 package paycore.paycore.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import paycore.paycore.application.usecase.PlaceOrderUseCase;
-import paycore.paycore.common.UseCase;
 import paycore.paycore.domain.EventType;
 import paycore.paycore.domain.OrderStatus;
 import paycore.paycore.domain.OutboxStatus;
@@ -25,7 +22,6 @@ public class OrderService implements PlaceOrderUseCase {
 
     private final OrderRepository orderRepository;
     private final OrderOutboxRepository outboxRepository;
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     @Transactional
@@ -43,6 +39,7 @@ public class OrderService implements PlaceOrderUseCase {
                 .amount(dto.amount())
                 .amountTaxFree(dto.amountTaxFree())
                 .status(OrderStatus.PENDING)
+                .createdAt(LocalDateTime.now())
                 .build();
 
         orderRepository.save(order);
@@ -51,23 +48,18 @@ public class OrderService implements PlaceOrderUseCase {
         return order;
     }
 
-
     private void createOutboxEvent(OrderEntity order, String eventType) {
-        try {
-            String payload = objectMapper.writeValueAsString(order);
+        OrderOutboxEntity event = OrderOutboxEntity.builder()
+                .sagaId(order.getSagaId())
+                .eventType(eventType)
+                .status(OutboxStatus.PENDING)
+                .apiKey(order.getApiKey())
+                .productDesc(order.getProductDesc())
+                .amount(order.getAmount())
+                .amountTaxFree(order.getAmountTaxFree())
+                .createdAt(LocalDateTime.now())
+                .build();
 
-            OrderOutboxEntity event = OrderOutboxEntity.builder()
-                    .sagaId(order.getSagaId())
-                    .eventType(eventType)
-                    .payload(payload)
-                    .status(OutboxStatus.PENDING)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-
-            outboxRepository.save(event);
-
-        } catch (Exception | JsonProcessingException e) {
-            throw new UseCase.Exception("Failed to serialize order: " + e.getMessage());
-        }
+        outboxRepository.save(event);
     }
 }

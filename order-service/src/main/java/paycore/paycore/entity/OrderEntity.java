@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import paycore.paycore.domain.OrderStatus;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -36,6 +37,8 @@ public class OrderEntity {
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
+
+    private LocalDateTime createdAt;
 
     public void updateStatus(OrderStatus newStatus) {
         this.status = newStatus;

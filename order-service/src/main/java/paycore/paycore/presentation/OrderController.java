@@ -18,7 +18,7 @@ public class OrderController {
     private final PlaceOrderUseCase placeOrderUseCase;
     private final FindOrderUseCase findOrderUseCase;
 
-    @PostMapping
+    @PostMapping("")
     public ResponseEntity<OrderEntity> createOrder(
             @RequestBody OrderRequestDto dto
     ) {
