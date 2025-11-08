@@ -5,5 +5,6 @@ include(
         "order-service",
         "payment-service",
         "settlement-service",
-        "notification-service"
+        "notification-service",
+        "order-outbox-worker"
 )
