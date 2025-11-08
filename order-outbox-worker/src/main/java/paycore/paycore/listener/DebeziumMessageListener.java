@@ -6,10 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.integration.annotation.ServiceActivator;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
-import paycore.paycore.config.JsonMapper;
+import paycore.paycore.common.JsonMapper;
+import paycore.paycore.domain.OutboxStatus;
 import paycore.paycore.dto.OrderOutboxRecord;
 import paycore.paycore.usecase.WorkerUseCase;
-import paycore.paycore.usecase.model.WorkerServiceRequest;
+import paycore.paycore.usecase.model.WorkerRequest;
 
 @Slf4j
 @Component
@@ -19,7 +20,7 @@ public class DebeziumMessageListener {
     private final JsonMapper jsonMapper;
 
     @ServiceActivator(inputChannel = "debeziumInputChannel")
-    public void handler(Message<?> message) {
+    public Void handler(Message<?> message) {
         byte[] payload = (byte[]) message.getPayload();
 
         try {
@@ -27,7 +28,12 @@ public class DebeziumMessageListener {
             OrderOutboxRecord record = jsonMapper.mapper().treeToValue(json.path("payload").path("after"), OrderOutboxRecord.class);
             log.info("Received order event: {}", record);
 
-            WorkerServiceRequest workerServiceRequest = new WorkerServiceRequest(
+            if (record.status() == OutboxStatus.SENT) {
+                log.error("Record has been sent");
+
+                return null;
+            }
+            WorkerRequest workerRequest = new WorkerRequest(
                     record.id(),
                     record.sagaId(),
                     record.eventType(),
@@ -38,10 +44,12 @@ public class DebeziumMessageListener {
                     record.amountTaxFree(),
                     record.createdAt()
             );
-            workerUseCase.execute(workerServiceRequest);
+            workerUseCase.execute(workerRequest);
 
         } catch (Exception e) {
             log.error("Error while parse debezium message", e);
         }
+
+        return null;
     }
 }

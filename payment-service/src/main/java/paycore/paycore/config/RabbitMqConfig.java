@@ -12,6 +12,10 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMqConfig {
+    public static final String PAYMENT_EXCHANGE = "payment.exchange";
+    public static final String PAYMENT_QUEUE = "payment.queue";
+    public static final String ROUTING_KEY = "payment.create";
+
     @Bean
     public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
@@ -33,18 +37,18 @@ public class RabbitMqConfig {
 
     @Bean
     public DirectExchange directExchange() {
-        return new DirectExchange("payment.exchange");
+        return new DirectExchange(PAYMENT_EXCHANGE);
     }
 
     @Bean
     public Queue queue() {
-        return new Queue("payment.queue");
+        return new Queue(PAYMENT_QUEUE);
     }
 
     @Bean
     public Binding binding() {
         return BindingBuilder.bind(queue())
                 .to(directExchange())
-                .with("payment.create");
+                .with(ROUTING_KEY);
     }
 }

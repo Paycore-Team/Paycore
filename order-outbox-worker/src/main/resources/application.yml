@@ -1,6 +1,32 @@
 server:
   port: ${SERVER_PORT:9081}
 
+spring:
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: 5672
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: /
+    connection-timeout: 5s
+    publisher-confirm-type: correlated
+    publisher-returns: true
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/orderdb}
+    username: ${SPRING_DATASOURCE_USERNAME:orderuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:orderpass}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    properties:
+      hibernate:
+        dialect: ${SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT:org.hibernate.dialect.PostgreSQLDialect}
+    show-sql: true
+    open-in-view: false
+
 debezium:
   # Spring Integration Debezium wrapper 용 옵션
   payloadFormat: JSON # 수신된 이벤트의 키/값을 Json 으로 직렬화하도록 설정. 성능 개선 필요 시 PROTOBUF 로 변경 고려
@@ -48,3 +74,4 @@ debezium:
     decimal:
       handling:
         mode: string
+

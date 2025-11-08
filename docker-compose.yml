@@ -39,6 +39,9 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.PostgreSQLDialect
       - POSTGRESQL_HOST=order-postgres
+      - RABBITMQ_HOST=host.docker.internal
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
 
   order-postgres:
     image: postgres:16
@@ -79,6 +82,11 @@ services:
       - SPRING_DATASOURCE_PASSWORD=paymentpass
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
       - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.PostgreSQLDialect
+      - RABBITMQ_HOST=host.docker.internal
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+      - REDIS_HOST=host.docker.internal
+      - REDIS_PASSWORD=redispasswd
 
   payment-postgres:
     image: postgres:16

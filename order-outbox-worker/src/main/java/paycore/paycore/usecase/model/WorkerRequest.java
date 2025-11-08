@@ -5,7 +5,7 @@ import paycore.paycore.domain.OutboxStatus;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public record WorkerServiceRequest(
+public record WorkerRequest(
         Long id,
         UUID sagaId,
         String eventType,

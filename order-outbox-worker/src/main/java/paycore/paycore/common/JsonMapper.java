@@ -1,4 +1,4 @@
-package paycore.paycore.config;
+package paycore.paycore.common;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
