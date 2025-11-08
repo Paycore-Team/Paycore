@@ -25,9 +25,12 @@ public class PaymentService implements PaymentUseCase {
     private final PaymentPersistenceUseCase paymentPersistenceUseCase;
     private final IdempotencyKeyRepository idempotencyKeyRepository;
 
+    private static final String retUrl = "retUrl";
+    private static final String retCancelUrl = "retCancelUrl";
+
     @Override
     public Void execute(PaymentServiceRequest input) {
-        IdempotencyKeyRecord record = idempotencyKeyRepository.getStatus(input.idempotencyKey());
+        IdempotencyKeyRecord record = idempotencyKeyRepository.getStatus(input.sagaId());
         IdempotencyKeyStatus status = record.getStatus();
 
         if (status == IdempotencyKeyStatus.LOCKED) {
@@ -39,17 +42,17 @@ public class PaymentService implements PaymentUseCase {
             return null;
         }
 
-        Boolean locked = idempotencyKeyRepository.acquireLockIfAbsent(input.idempotencyKey());
+        Boolean locked = idempotencyKeyRepository.acquireLockIfAbsent(input.sagaId());
         if (!locked) {
             throw new RecordAlreadyLeased();
         }
 
         MockServiceRequest newMockServiceRequest = new MockServiceRequest(
                 input.apiKey(),
-                input.orderNo(),
+                input.id(),
                 input.productDesc(),
-                input.retUrl(),
-                input.retCancelUrl(),
+                retUrl,
+                retCancelUrl,
                 input.amount(),
                 input.amountTaxFree()
         );
@@ -62,8 +65,7 @@ public class PaymentService implements PaymentUseCase {
                         input.sagaId(),
                         result.httpResponse().statusCode(),
                         result.httpResponse().body(),
-                        input.amount(),
-                        input.storeName()
+                        input.amount()
                 )
         );
 
@@ -71,14 +73,14 @@ public class PaymentService implements PaymentUseCase {
                 result.httpResponse().statusCode(),
                 result.httpResponse().body()
         );
-        IdempotencyResultResponse response = idempotencyKeyRepository.saveResultAndReleaseLock(input.idempotencyKey(), newIdempotencyKeyData, 15);
+        IdempotencyResultResponse response = idempotencyKeyRepository.saveResultAndReleaseLock(input.sagaId(), newIdempotencyKeyData, 15);
         if (response.err() != null) {
             if (response.err().equals("result_exists")) {
                 throw new ResultAlreadyExist();
             }
         }
 
-        log.info("Payment request succeeded.\nSagaId : {}\n, IdempotencyKey : {}\n, orderNo : {}\n", input.sagaId(), input.idempotencyKey(), input.orderNo());
+        log.info("Payment request succeeded.\nSagaId : {}\n, IdempotencyKey : {}\n, orderNo : {}\n", input.sagaId(), input.sagaId(), input.id());
 
         return null;
     }

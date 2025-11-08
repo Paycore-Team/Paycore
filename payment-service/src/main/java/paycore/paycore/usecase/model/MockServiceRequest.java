@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 
 public record MockServiceRequest(
         String apiKey,
-        String orderNo,
+        Long orderNo,
         String productDesc,
         String retUrl,
         String retCancelUrl,

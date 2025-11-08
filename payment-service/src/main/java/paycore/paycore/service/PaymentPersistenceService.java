@@ -26,13 +26,12 @@ public class PaymentPersistenceService implements PaymentPersistenceUseCase {
         PaymentEntity paymentEntity = new PaymentEntity(
                 paymentId,
                 input.amount(),
-                input.statusCode(),
-                input.storeName()
+                input.statusCode()
         );
         PaymentOutboxEntity paymentOutboxEntity = new PaymentOutboxEntity(
                 input.sagaId(),
                 paymentId,
-                OutboxStatus.NEW,
+                OutboxStatus.PENDING,
                 input.statusCode(),
                 input.body()
         );

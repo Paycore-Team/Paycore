@@ -1,18 +1,18 @@
 package paycore.paycore.usecase.model;
 
+import paycore.paycore.domain.OutboxStatus;
+
 import java.math.BigDecimal;
 import java.util.UUID;
 
 public record PaymentServiceRequest(
+        Long id,
         UUID sagaId,
-        UUID idempotencyKey,
+        String eventType,
+        OutboxStatus status,
         String apiKey,
-        String orderNo,
         String productDesc,
-        String retUrl,
-        String retCancelUrl,
         BigDecimal amount,
-        long amountTaxFree,
-        String storeName
+        long amountTaxFree
 ) {
 }

@@ -23,15 +23,12 @@ public class PaymentEntity {
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
-    private String store;
-
     private LocalDateTime createdAt;
 
-    public PaymentEntity(UUID paymentId, BigDecimal amount, Integer httpStatus, String store) {
+    public PaymentEntity(UUID paymentId, BigDecimal amount, Integer httpStatus) {
         this.paymentId = paymentId;
         this.amount = amount;
         this.status = mapStatus(httpStatus);
-        this.store = store;
         this.createdAt = LocalDateTime.now();
     }
 
