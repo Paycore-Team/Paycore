@@ -12,18 +12,32 @@ public class RedisLuaConfig {
     public DefaultRedisScript<IdempotencyKeyRecord> readLeaseAndResultScript() {
         DefaultRedisScript<IdempotencyKeyRecord> redisScript = new DefaultRedisScript<>();
         redisScript.setScriptText("""
-                -- KEYS[1] = lease key
-                -- KEYS[2] = result key
+                -- KEYS[1] = lease_key
+                -- KEYS[2] = result_key
                 
-                 local lease  = redis.call('GET', KEYS[1])
-                 if lease == false then lease = nil end
-                 local result = redis.call('GET', KEYS[2])
-                    if result == false then
-                        result = nil
-                    else
-                        result = cjson.decode(result)
-                    end
-                 return cjson.encode({ lease = lease, result = result })
+                local lease  = redis.call('GET', KEYS[1])
+                if lease == false then
+                    lease = nil
+                end
+                
+                local result = redis.call('GET', KEYS[2])
+                if result == false then
+                    result = nil
+                else
+                    result = cjson.decode(result)
+                end
+                
+                if result ~= nil then
+                    return cjson.encode({ status = "DONE", result = result })
+                end
+                
+                if lease ~= nil then
+                    return cjson.encode({ status = "LOCKED", result = result })
+                end
+                
+                redis.call('SET', KEYS[1], 'LOCKED', 'NX', 'PX', 10000)
+                
+                return cjson.encode({ status = "ACQUIRED", result = result })
                 """
         );
         redisScript.setResultType(IdempotencyKeyRecord.class);
@@ -35,8 +49,8 @@ public class RedisLuaConfig {
     public DefaultRedisScript<IdempotencyResultResponse> saveResultAndDeleteLeaseScript() {
         DefaultRedisScript<IdempotencyResultResponse> redisScript = new DefaultRedisScript<>();
         redisScript.setScriptText("""
-                -- KEYS[1] = lease key
-                -- KEYS[2] = result key
+                -- KEYS[1] = lease_key
+                -- KEYS[2] = result_key
                 -- ARGV[1] = result_payload
                 -- ARGV[2] = ttl_days
                 

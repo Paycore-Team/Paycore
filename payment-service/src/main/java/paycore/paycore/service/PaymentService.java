@@ -5,8 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import paycore.paycore.common.UseCase;
 import paycore.paycore.domain.IdempotencyKeyRecord;
-import paycore.paycore.domain.IdempotencyKeyStatus;
 import paycore.paycore.domain.IdempotencyResultResponse;
+import paycore.paycore.domain.IdempotencyStatus;
 import paycore.paycore.entity.IdempotencyKeyData;
 import paycore.paycore.repository.IdempotencyKeyRepository;
 import paycore.paycore.usecase.MockUseCase;
@@ -30,21 +30,19 @@ public class PaymentService implements PaymentUseCase {
 
     @Override
     public Void execute(PaymentServiceRequest input) {
-        IdempotencyKeyRecord record = idempotencyKeyRepository.getStatus(input.sagaId());
-        IdempotencyKeyStatus status = record.getStatus();
+        IdempotencyKeyRecord record = idempotencyKeyRepository.getStatusOrLock(input.sagaId());
+        IdempotencyStatus status = record.status();
 
-        if (status == IdempotencyKeyStatus.LOCKED) {
+        if (status == IdempotencyStatus.LOCKED) {
+            log.warn("Idempotency key [{}] already Locked", input.sagaId());
+
             throw new RecordAlreadyLeased();
         }
 
-        if (status == IdempotencyKeyStatus.SUCCESS || status == IdempotencyKeyStatus.SERVER_ERROR || status == IdempotencyKeyStatus.CLIENT_ERROR) {
-            log.info("Idempotency key already exists\n {}", record.result());
+        if (status == IdempotencyStatus.DONE) {
+            log.info("Idempotency key [{}] already exists", input.sagaId());
+
             return null;
-        }
-
-        Boolean locked = idempotencyKeyRepository.acquireLockIfAbsent(input.sagaId());
-        if (!locked) {
-            throw new RecordAlreadyLeased();
         }
 
         MockServiceRequest newMockServiceRequest = new MockServiceRequest(
