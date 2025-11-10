@@ -1,0 +1,115 @@
+@startuml
+title Settlement Module Class Diagram
+
+package "paycore.paycore" {
+    package common {
+        interface UseCase<I,O>
+    }
+
+    package dto {
+        class SettlementRequestDto
+    }
+
+    package domain {
+        enum SettlementStatus
+        enum EventType
+        enum OutboxStatus
+    }
+
+    package entity {
+        class SettlementEntity {
+            uuid id
+            uuid sagaId
+            uuid paymentId
+            uuid orderId
+            BigDecimal amount
+            BigDecimal fee
+            String settlementAccount
+            BigDecimal merchantPayoutAmount
+            BigDecimal platformFeeAmount
+            SettlementStatus status
+            LocalDateTime settledAt
+            +markCompleted(BigDecimal payout, BigDecimal platformFee)
+            +markFailed()
+        }
+
+        class SettlementOutboxEntity {
+            uuid id
+            uuid sagaId
+            EventType eventType
+            OutboxStatus status
+            String payload
+            LocalDateTime createdAt
+            LocalDateTime sentAt
+            +markSent()
+            +markFailed()
+        }
+    }
+
+    package repository {
+        interface SettlementRepository
+        interface SettlementOutboxRepository
+    }
+
+    package application.usecase {
+        interface ProcessSettlementUseCase
+        interface FindSettlementUseCase
+    }
+
+    package service {
+        class SettlementService
+        class SettlementPersistenceService
+        class SettlementBatchTasklet
+    }
+
+    package message.listener {
+        class SettlementMessageListener
+    }
+
+    package config {
+        class RabbitMqConfig
+        class SettlementBatchConfig
+    }
+
+    package scheduler {
+        class SettlementBatchScheduler
+    }
+}
+
+UseCase <|.. ProcessSettlementUseCase
+UseCase <|.. FindSettlementUseCase
+
+ProcessSettlementUseCase <|.. SettlementService
+FindSettlementUseCase <|.. SettlementPersistenceService
+
+SettlementService --> SettlementRepository
+SettlementService --> SettlementOutboxRepository
+SettlementService --> SettlementRequestDto
+SettlementService --> SettlementEntity
+SettlementService --> SettlementOutboxEntity
+
+SettlementPersistenceService --> SettlementRepository
+SettlementMessageListener --> ProcessSettlementUseCase
+SettlementMessageListener --> SettlementRequestDto
+SettlementMessageListener --> RabbitMqConfig
+
+SettlementBatchTasklet --> SettlementRepository
+SettlementBatchTasklet --> SettlementOutboxRepository
+SettlementBatchTasklet --> SettlementEntity
+SettlementBatchTasklet --> SettlementOutboxEntity
+
+SettlementBatchConfig --> SettlementBatchTasklet
+SettlementBatchConfig --> SettlementBatchScheduler
+SettlementBatchScheduler --> "JobLauncher"
+SettlementBatchScheduler --> "Job settlementJob"
+
+RabbitMqConfig ..> "TopicExchange"
+RabbitMqConfig ..> "Queue"
+
+SettlementRepository -left-|> "JpaRepository<SettlementEntity, UUID>"
+SettlementOutboxRepository -left-|> "JpaRepository<SettlementOutboxEntity, UUID>"
+
+SettlementEntity --> SettlementStatus
+SettlementOutboxEntity --> EventType
+SettlementOutboxEntity --> OutboxStatus
+@enduml

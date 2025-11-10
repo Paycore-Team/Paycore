@@ -2,6 +2,11 @@ server:
   port: ${SERVER_PORT:8084}
 
 spring:
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: always
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5436/settlementdb}
     username: ${SPRING_DATASOURCE_USERNAME:settlementuser}
