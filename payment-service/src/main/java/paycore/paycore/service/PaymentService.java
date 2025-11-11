@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import paycore.paycore.common.UseCase;
+import paycore.paycore.config.TaskSchedulerManager;
 import paycore.paycore.domain.IdempotencyKeyRecord;
 import paycore.paycore.domain.IdempotencyResultResponse;
 import paycore.paycore.domain.IdempotencyStatus;
@@ -17,6 +18,10 @@ import paycore.paycore.usecase.model.MockServiceResponse;
 import paycore.paycore.usecase.model.PaymentPersistenceServiceRequest;
 import paycore.paycore.usecase.model.PaymentServiceRequest;
 
+import java.time.Duration;
+import java.util.UUID;
+import java.util.concurrent.ScheduledFuture;
+
 @Slf4j
 @RequiredArgsConstructor
 @Service
@@ -24,13 +29,22 @@ public class PaymentService implements PaymentUseCase {
     private final MockUseCase mockUseCase;
     private final PaymentPersistenceUseCase paymentPersistenceUseCase;
     private final IdempotencyKeyRepository idempotencyKeyRepository;
+    private final TaskSchedulerManager taskSchedulerManager;
+    private final HeartBeatService heartBeatService;
 
     private static final String retUrl = "retUrl";
     private static final String retCancelUrl = "retCancelUrl";
 
     @Override
     public Void execute(PaymentServiceRequest input) {
-        IdempotencyKeyRecord record = idempotencyKeyRepository.getStatusOrLock(input.sagaId());
+        UUID lockToken = UUID.randomUUID();
+        int ttlSeconds = 3;
+
+        IdempotencyKeyRecord record = idempotencyKeyRepository.getStatusOrLock(
+                input.sagaId(),
+                lockToken,
+                ttlSeconds
+        );
         IdempotencyStatus status = record.status();
 
         if (status == IdempotencyStatus.LOCKED) {
@@ -45,40 +59,59 @@ public class PaymentService implements PaymentUseCase {
             return null;
         }
 
-        MockServiceRequest newMockServiceRequest = new MockServiceRequest(
-                input.apiKey(),
-                input.id(),
-                input.productDesc(),
-                retUrl,
-                retCancelUrl,
-                input.amount(),
-                input.amountTaxFree()
-        );
-        MockServiceResponse result = mockUseCase.execute(
-                newMockServiceRequest
+        ScheduledFuture<?> heartBeat = taskSchedulerManager.scheduleAtFixedRate(
+                () -> heartBeatService.startHeartBeat(input.sagaId(), lockToken, ttlSeconds),
+                Duration.ofSeconds(ttlSeconds / 3)
         );
 
-        paymentPersistenceUseCase.execute(
-                new PaymentPersistenceServiceRequest(
-                        input.sagaId(),
-                        result.httpResponse().statusCode(),
-                        result.httpResponse().body(),
-                        input.amount()
-                )
-        );
+        try {
+            MockServiceRequest newMockServiceRequest = new MockServiceRequest(
+                    input.apiKey(),
+                    input.id(),
+                    input.productDesc(),
+                    retUrl,
+                    retCancelUrl,
+                    input.amount(),
+                    input.amountTaxFree()
+            );
+            MockServiceResponse result = mockUseCase.execute(
+                    newMockServiceRequest
+            );
 
-        IdempotencyKeyData newIdempotencyKeyData = new IdempotencyKeyData(
-                result.httpResponse().statusCode(),
-                result.httpResponse().body()
-        );
-        IdempotencyResultResponse response = idempotencyKeyRepository.saveResultAndReleaseLock(input.sagaId(), newIdempotencyKeyData, 15);
-        if (response.err() != null) {
-            if (response.err().equals("result_exists")) {
-                throw new ResultAlreadyExist();
+            paymentPersistenceUseCase.execute(
+                    new PaymentPersistenceServiceRequest(
+                            input.sagaId(),
+                            result.httpResponse().statusCode(),
+                            result.httpResponse().body(),
+                            input.amount()
+                    )
+            );
+
+            IdempotencyKeyData newIdempotencyKeyData = new IdempotencyKeyData(
+                    result.httpResponse().statusCode(),
+                    result.httpResponse().body()
+            );
+            IdempotencyResultResponse response = idempotencyKeyRepository.saveResultAndReleaseLock(
+                    input.sagaId(),
+                    lockToken,
+                    newIdempotencyKeyData,
+                    15
+            );
+            if (response.err() != null) {
+                if (response.err().equals("result_exists")) {
+                    log.warn("Result [{}] already exists", input.sagaId());
+
+                    return null;
+                }
             }
-        }
 
-        log.info("Payment request succeeded.\nSagaId : {}\n, IdempotencyKey : {}\n, orderNo : {}\n", input.sagaId(), input.sagaId(), input.id());
+            log.info("Payment request succeeded.\nSagaId : {}\n, orderNo : {}\n",
+                    input.sagaId(),
+                    input.id()
+            );
+        } finally {
+            taskSchedulerManager.cancel(heartBeat);
+        }
 
         return null;
     }
@@ -86,12 +119,6 @@ public class PaymentService implements PaymentUseCase {
     private class RecordAlreadyLeased extends UseCase.Exception {
         public RecordAlreadyLeased() {
             super("Resource is already leased by another process\n");
-        }
-    }
-
-    private class ResultAlreadyExist extends UseCase.Exception {
-        public ResultAlreadyExist() {
-            super("Result is already exist\n");
         }
     }
 }
