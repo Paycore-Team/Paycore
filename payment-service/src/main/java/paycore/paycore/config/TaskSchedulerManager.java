@@ -22,7 +22,7 @@ public class TaskSchedulerManager {
 
     public void cancel(ScheduledFuture<?> future) {
         if (future != null) {
-            future.cancel(true);
+            future.cancel(true); // 이미 실행 중인 작업이 있다면 인터럽트를 걸어 즉시 중단 시도 (mayInterruptIfRunning = true)
 
             log.info("Task scheduler cancelled for task: {}", future.getClass().getSimpleName());
         }
