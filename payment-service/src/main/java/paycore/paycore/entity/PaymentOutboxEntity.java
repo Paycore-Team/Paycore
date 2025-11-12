@@ -7,6 +7,7 @@ import jakarta.persistence.Id;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import paycore.paycore.domain.EventType;
 import paycore.paycore.domain.OutboxStatus;
 
@@ -14,6 +15,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PaymentOutboxEntity {
     @Id

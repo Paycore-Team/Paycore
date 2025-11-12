@@ -9,9 +9,11 @@ import paycore.paycore.usecase.model.PaymentServiceRequest;
 @Component
 @RequiredArgsConstructor
 public class PaymentMessageListener {
+    public static final String PAYMENT_QUEUE = "payment.queue";
+
     private final PaymentUseCase paymentUseCase;
 
-    @RabbitListener(queues = "payment.queue")
+    @RabbitListener(queues = PAYMENT_QUEUE)
     public void onMessage(PaymentServiceRequest input) {
         paymentUseCase.execute(input);
     }
