@@ -1,0 +1,43 @@
+plugins {
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    id 'java'
+}
+
+group = 'com.paycore.orderoutboxworker'
+version = '0.0.1-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    // Debezium Supplier 기반 CDC 처리
+    implementation(platform("org.springframework.cloud.fn:spring-functions-catalog-bom:5.1.1"))
+    implementation("org.springframework.cloud.fn:spring-debezium-supplier:5.1.1") {
+        exclude group: "io.debezium", module: "debezium-connector-mongodb" // 필요 없는 커넥터 제외
+    }
+    implementation "io.debezium:debezium-embedded:3.3.1.Final"
+    implementation "io.debezium:debezium-connector-postgres:3.3.1.Final"
+    implementation "org.postgresql:postgresql:42.7.8"
+
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+springBoot {
+    mainClass = 'paycore.paycore.OrderOutboxWorkerApplication'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}

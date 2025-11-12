@@ -7,7 +7,6 @@ public record PaymentPersistenceServiceRequest(
         UUID sagaId,
         int statusCode,
         String body,
-        BigDecimal amount,
-        String storeName
+        BigDecimal amount
 ) {
 }

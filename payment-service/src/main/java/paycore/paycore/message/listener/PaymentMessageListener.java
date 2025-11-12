@@ -1,22 +1,18 @@
 package paycore.paycore.message.listener;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
-import paycore.paycore.service.PaymentService;
+import paycore.paycore.usecase.PaymentUseCase;
 import paycore.paycore.usecase.model.PaymentServiceRequest;
 
 @Component
+@RequiredArgsConstructor
 public class PaymentMessageListener {
-    PaymentService paymentService;
-
-    public PaymentMessageListener(
-            PaymentService paymentService
-    ) {
-        this.paymentService = paymentService;
-    }
+    private final PaymentUseCase paymentUseCase;
 
     @RabbitListener(queues = "payment.queue")
     public void onMessage(PaymentServiceRequest input) {
-        paymentService.execute(input);
+        paymentUseCase.execute(input);
     }
 }

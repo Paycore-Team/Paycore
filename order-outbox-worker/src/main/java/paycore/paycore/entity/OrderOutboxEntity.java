@@ -1,10 +1,7 @@
 package paycore.paycore.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import paycore.paycore.domain.OutboxStatus;
 
 import java.math.BigDecimal;
@@ -13,6 +10,7 @@ import java.util.UUID;
 
 @Entity
 @Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -35,7 +33,7 @@ public class OrderOutboxEntity {
 
     private BigDecimal amount;
 
-    private long amountTaxFree;
+    private Long amountTaxFree;
 
     private LocalDateTime createdAt;
 }
