@@ -11,6 +11,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import paycore.paycore.domain.IdempotencyKeyRecord;
+import paycore.paycore.domain.IdempotencyLockResponse;
 import paycore.paycore.domain.IdempotencyResultResponse;
 
 @Configuration
@@ -45,16 +46,6 @@ public class RedisConfig {
         );
     }
 
-    @Bean(name = "RedisTemplate")
-    public RedisTemplate<String, String> redisTemplate() {
-        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(redisConnectionFactory());
-        redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(new Jackson2JsonRedisSerializer<>(String.class));
-
-        return redisTemplate;
-    }
-
     @Bean(name = "IdempotencyKeyRecordRedisTemplate")
     public RedisTemplate<String, IdempotencyKeyRecord> idempotencyKeyRecordRedisTemplate() {
         RedisTemplate<String, IdempotencyKeyRecord> redisTemplate = new RedisTemplate<>();
@@ -71,6 +62,16 @@ public class RedisConfig {
         redisTemplate.setConnectionFactory(redisConnectionFactory());
         redisTemplate.setKeySerializer(new StringRedisSerializer());
         redisTemplate.setValueSerializer(new Jackson2JsonRedisSerializer<>(IdempotencyResultResponse.class));
+
+        return redisTemplate;
+    }
+
+    @Bean(name = "IdempotencyLockResponseRedisTemplate")
+    public RedisTemplate<String, IdempotencyLockResponse> idempotencyLockResponseRedisTemplate() {
+        RedisTemplate<String, IdempotencyLockResponse> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(redisConnectionFactory());
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        redisTemplate.setValueSerializer(new Jackson2JsonRedisSerializer<>(IdempotencyLockResponse.class));
 
         return redisTemplate;
     }
