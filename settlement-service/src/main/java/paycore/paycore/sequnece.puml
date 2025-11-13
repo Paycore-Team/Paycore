@@ -1,0 +1,44 @@
+@startuml
+title Settlement Flow - Payment Event to Batch Completion
+
+actor "PaymentService\n(외부 모듈)" as PaymentService
+participant "RabbitMQ" as RabbitMQ
+participant "SettlementMessageListener" as Listener
+participant "ProcessSettlementUseCase" as ProcessUC
+participant "SettlementService" as SettlementSvc
+database "SettlementRepository" as SettlementRepo
+database "SettlementOutboxRepository" as OutboxRepo
+
+== 결제 성공 이벤트 수신 ==
+PaymentService -> RabbitMQ: PaymentCompletedEvent(JSON)
+RabbitMQ -> Listener: deliver message
+Listener -> ProcessUC: execute(SettlementRequestDto)
+ProcessUC -> SettlementSvc: execute(dto)
+SettlementSvc -> SettlementRepo: findByPaymentId(dto.paymentId)
+alt 신규 정산
+    SettlementSvc -> SettlementRepo: save(SettlementEntity{\n status=PENDING,\n merchantPayoutAmount=0,\n platformFeeAmount=0})
+    SettlementSvc -> OutboxRepo: save(SettlementOutboxEntity{PENDING})
+end
+SettlementSvc --> ProcessUC: SettlementEntity
+ProcessUC --> Listener: SettlementEntity
+Listener --> RabbitMQ: ack
+
+== 매일 배치 정산 ==
+actor "JobLauncher" as JobLauncher
+participant "SettlementBatchScheduler" as Scheduler
+participant "settlementJob/settlementStep" as BatchStep
+participant "SettlementBatchTasklet" as Tasklet
+
+Scheduler -> JobLauncher: run(settlementJob, timestamp)
+JobLauncher -> BatchStep: start()
+BatchStep -> Tasklet: execute()
+Tasklet -> SettlementRepo: findAllByStatus(PENDING)
+loop 각 PENDING 정산
+    Tasklet -> SettlementEntity: 계산\nmerchantPayout = amount - fee\nplatformFee = fee
+    Tasklet -> SettlementEntity: markCompleted(merchantPayout, platformFee)
+    Tasklet -> SettlementRepo: save(settlement{COMPLETED,\n merchantPayoutAmount,\n platformFeeAmount})
+    Tasklet -> OutboxRepo: save(SettlementOutboxEntity{PENDING})
+end
+Tasklet --> BatchStep: RepeatStatus.FINISHED
+BatchStep --> JobLauncher: JobExecution (COMPLETED)
+@enduml
