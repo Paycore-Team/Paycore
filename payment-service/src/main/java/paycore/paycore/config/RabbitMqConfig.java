@@ -16,6 +16,10 @@ public class RabbitMqConfig {
     public static final String PAYMENT_QUEUE = "payment.queue";
     public static final String ROUTING_KEY = "payment.create";
 
+    public static final String SETTLEMENT_EXCHANGE = "settlement.exchange";
+    public static final String SETTLEMENT_QUEUE = "settlement.queue";
+    public static final String SETTLEMENT_ROUTING_KEY = "settlement.created";
+
     @Bean
     public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
@@ -36,19 +40,36 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    public DirectExchange directExchange() {
+    public DirectExchange paymentDirectExchange() {
         return new DirectExchange(PAYMENT_EXCHANGE);
     }
 
     @Bean
-    public Queue queue() {
+    public Queue paymentQueue() {
         return new Queue(PAYMENT_QUEUE);
     }
 
     @Bean
-    public Binding binding() {
-        return BindingBuilder.bind(queue())
-                .to(directExchange())
+    public Binding paymentBinding() {
+        return BindingBuilder.bind(paymentQueue())
+                .to(paymentDirectExchange())
                 .with(ROUTING_KEY);
+    }
+
+    @Bean
+    public DirectExchange settlemnetDirectExchange() {
+        return new DirectExchange(SETTLEMENT_EXCHANGE);
+    }
+
+    @Bean
+    public Queue settlemnetQueue() {
+        return new Queue(SETTLEMENT_QUEUE);
+    }
+
+    @Bean
+    public Binding settlemnetBinding() {
+        return BindingBuilder.bind(paymentQueue())
+                .to(paymentDirectExchange())
+                .with(SETTLEMENT_ROUTING_KEY);
     }
 }

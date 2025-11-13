@@ -9,8 +9,8 @@ import paycore.paycore.domain.IdempotencyResultResponse;
 
 @Configuration
 public class RedisLuaConfig {
-    @Bean("ReadLeaseAndResultScript")
-    public DefaultRedisScript<IdempotencyKeyRecord> readLeaseAndResultScript() {
+    @Bean("ReadLeaseAndResultAndGetLockScript")
+    public DefaultRedisScript<IdempotencyKeyRecord> readLeaseAndResultAndGetLockScript() {
         DefaultRedisScript<IdempotencyKeyRecord> redisScript = new DefaultRedisScript<>();
         redisScript.setScriptText("""
                 -- KEYS[1] = lease_key
@@ -51,7 +51,7 @@ public class RedisLuaConfig {
     }
 
     @Bean("SaveResultAndReleaseLockScript")
-    public DefaultRedisScript<IdempotencyResultResponse> saveResultAndDeleteLeaseScript() {
+    public DefaultRedisScript<IdempotencyResultResponse> saveResultAndReleaseLockScript() {
         DefaultRedisScript<IdempotencyResultResponse> redisScript = new DefaultRedisScript<>();
         redisScript.setScriptText("""
                 -- KEYS[1] = lease_key
@@ -105,6 +105,30 @@ public class RedisLuaConfig {
                 end
                 
                 return cjson.encode({ err = err })
+                """
+        );
+        redisScript.setResultType(IdempotencyLockResponse.class);
+
+        return redisScript;
+    }
+
+    @Bean("ReleaseLockScript")
+    public DefaultRedisScript<IdempotencyLockResponse> releaseLockScript() {
+        DefaultRedisScript<IdempotencyLockResponse> redisScript = new DefaultRedisScript<>();
+        redisScript.setScriptText("""
+                -- KEYS[1] = lease_key
+                -- ARGV[1] = lease_token
+                
+                local currentValue = redis.call("GET", KEYS[1])
+                local err = nil
+                
+                if currentValue == ARGV[1] then
+                    redis.call("DEL", KEYS[1])
+                else
+                    err = 'lock_not_owned'
+                end
+                
+                return cjson.encode({err = err})
                 """
         );
         redisScript.setResultType(IdempotencyLockResponse.class);

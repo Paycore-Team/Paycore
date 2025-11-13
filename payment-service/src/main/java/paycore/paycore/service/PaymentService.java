@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import paycore.paycore.common.UseCase;
 import paycore.paycore.config.TaskSchedulerManager;
 import paycore.paycore.domain.IdempotencyKeyRecord;
+import paycore.paycore.domain.IdempotencyLockResponse;
 import paycore.paycore.domain.IdempotencyResultResponse;
 import paycore.paycore.domain.IdempotencyStatus;
 import paycore.paycore.entity.IdempotencyKeyData;
@@ -78,6 +79,12 @@ public class PaymentService implements PaymentUseCase {
                     newMockServiceRequest
             );
 
+            if (result.httpResponse().statusCode() >= 500) {
+                log.warn("External server returned {}", result.httpResponse().statusCode());
+
+                throw new ExternalServerException();
+            }
+
             paymentPersistenceUseCase.execute(
                     new PaymentPersistenceServiceRequest(
                             input.sagaId(),
@@ -109,6 +116,15 @@ public class PaymentService implements PaymentUseCase {
                     input.sagaId(),
                     input.id()
             );
+        } catch (Exception e) {
+            log.warn("Error : {}", e.getMessage());
+
+            IdempotencyLockResponse response = idempotencyKeyRepository.releaseLock(input.sagaId(), lockToken);
+            if (response.err() != null) {
+                log.warn(response.err());
+            }
+
+            throw e;
         } finally {
             taskSchedulerManager.cancel(heartBeat);
         }
@@ -119,6 +135,12 @@ public class PaymentService implements PaymentUseCase {
     private class RecordAlreadyLeased extends UseCase.Exception {
         public RecordAlreadyLeased() {
             super("Resource is already leased by another process\n");
+        }
+    }
+
+    private class ExternalServerException extends UseCase.Exception {
+        public ExternalServerException() {
+            super("External server returned 5xx");
         }
     }
 }
