@@ -88,6 +88,29 @@ services:
       - REDIS_HOST=host.docker.internal
       - REDIS_PASSWORD=redispasswd
 
+  payment-outbox-worker:
+    image: payment-outbox-worker:latest
+    container_name: payment-outbox-worker
+    build:
+      context: ./payment-outbox-worker
+      dockerfile: Dockerfile
+    ports:
+      - "9082:9082"
+    depends_on:
+      - payment-postgres
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=9082
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://payment-postgres:5432/paymentdb
+      - SPRING_DATASOURCE_USERNAME=paymentuser
+      - SPRING_DATASOURCE_PASSWORD=paymentpass
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT=org.hibernate.dialect.PostgreSQLDialect
+      - POSTGRESQL_HOST=payment-postgres
+      - RABBITMQ_HOST=host.docker.internal
+      - RABBITMQ_USERNAME=guest
+      - RABBITMQ_PASSWORD=guest
+
   payment-postgres:
     image: postgres:16
     container_name: payment-postgres
@@ -96,6 +119,14 @@ services:
       - POSTGRES_DB=paymentdb
       - POSTGRES_USER=paymentuser
       - POSTGRES_PASSWORD=paymentpass
+    command:
+      - postgres
+      - -c
+      - wal_level=logical # logical decoding requires wal_level >= logical
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
     ports:
       - "5434:5432"
     volumes:
