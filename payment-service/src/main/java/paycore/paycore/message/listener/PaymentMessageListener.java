@@ -9,7 +9,7 @@ import paycore.paycore.usecase.model.PaymentServiceRequest;
 @Component
 @RequiredArgsConstructor
 public class PaymentMessageListener {
-    public static final String PAYMENT_QUEUE = "payment.queue";
+    public static final String PAYMENT_QUEUE = "order-payment.queue";
 
     private final PaymentUseCase paymentUseCase;
 

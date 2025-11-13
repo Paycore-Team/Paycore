@@ -8,6 +8,7 @@ import lombok.Setter;
 import paycore.paycore.domain.EventType;
 import paycore.paycore.domain.OutboxStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -16,7 +17,7 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "payment_outbox")
-public class PaymentOutboxEntity {
+public class PaymentOutbox {
     @Id
     private UUID sagaId;
 
@@ -28,16 +29,19 @@ public class PaymentOutboxEntity {
     @Enumerated(EnumType.STRING)
     private EventType eventType;
 
-    private String payload;
+    private String apiKey;
+
+    private BigDecimal amount;
 
     private LocalDateTime createdAt;
 
-    public PaymentOutboxEntity(UUID sagaId, UUID paymentId, OutboxStatus status, Integer httpStatus, String payload) {
+    public PaymentOutbox(UUID sagaId, UUID paymentId, OutboxStatus status, Integer httpStatus, String apiKey, BigDecimal amount) {
         this.sagaId = sagaId;
         this.paymentId = paymentId;
         this.status = status;
         this.eventType = mapStatus(httpStatus);
-        this.payload = payload;
+        this.apiKey = apiKey;
+        this.amount = amount;
         this.createdAt = LocalDateTime.now();
     }
 

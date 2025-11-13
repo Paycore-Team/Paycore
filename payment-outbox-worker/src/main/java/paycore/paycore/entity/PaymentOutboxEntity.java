@@ -5,6 +5,7 @@ import lombok.Setter;
 import paycore.paycore.domain.EventType;
 import paycore.paycore.domain.OutboxStatus;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -23,7 +24,9 @@ public class PaymentOutboxEntity {
     @Enumerated(EnumType.STRING)
     private EventType eventType;
 
-    private String payload;
+    private String apiKey;
+
+    private BigDecimal amount;
 
     private LocalDateTime createdAt;
 }

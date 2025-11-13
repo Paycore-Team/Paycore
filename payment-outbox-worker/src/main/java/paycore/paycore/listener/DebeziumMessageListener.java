@@ -38,7 +38,8 @@ public class DebeziumMessageListener {
                     record.paymentId(),
                     record.status(),
                     record.eventType(),
-                    record.payload(),
+                    record.apiKey(),
+                    record.amount(),
                     record.createdAt()
             );
             workerUseCase.execute(workerRequest);

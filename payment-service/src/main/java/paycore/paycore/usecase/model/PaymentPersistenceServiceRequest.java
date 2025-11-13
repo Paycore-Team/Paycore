@@ -6,7 +6,7 @@ import java.util.UUID;
 public record PaymentPersistenceServiceRequest(
         UUID sagaId,
         int statusCode,
-        String body,
+        String apiKey,
         BigDecimal amount
 ) {
 }

@@ -68,7 +68,7 @@ public class PaymentService implements PaymentUseCase {
         try {
             MockServiceRequest newMockServiceRequest = new MockServiceRequest(
                     input.apiKey(),
-                    input.id(),
+                    input.orderId(),
                     input.productDesc(),
                     retUrl,
                     retCancelUrl,
@@ -114,7 +114,7 @@ public class PaymentService implements PaymentUseCase {
 
             log.info("Payment request succeeded.\nSagaId : {}\n, orderNo : {}\n",
                     input.sagaId(),
-                    input.id()
+                    input.orderId()
             );
         } catch (Exception e) {
             log.warn("Error : {}", e.getMessage());

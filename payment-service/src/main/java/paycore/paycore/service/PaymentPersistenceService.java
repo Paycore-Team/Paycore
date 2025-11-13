@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import paycore.paycore.domain.OutboxStatus;
-import paycore.paycore.entity.PaymentEntity;
-import paycore.paycore.entity.PaymentOutboxEntity;
+import paycore.paycore.entity.Payment;
+import paycore.paycore.entity.PaymentOutbox;
 import paycore.paycore.repository.PaymentOutboxRepository;
 import paycore.paycore.repository.PaymentRepository;
 import paycore.paycore.usecase.PaymentPersistenceUseCase;
@@ -23,21 +23,23 @@ public class PaymentPersistenceService implements PaymentPersistenceUseCase {
     @Transactional
     public Void execute(PaymentPersistenceServiceRequest input) {
         UUID paymentId = UUID.randomUUID();
-        PaymentEntity paymentEntity = new PaymentEntity(
+        Payment payment = new Payment(
                 paymentId,
+                input.apiKey(),
                 input.amount(),
                 input.statusCode()
         );
-        PaymentOutboxEntity paymentOutboxEntity = new PaymentOutboxEntity(
+        PaymentOutbox paymentOutbox = new PaymentOutbox(
                 input.sagaId(),
                 paymentId,
                 OutboxStatus.PENDING,
                 input.statusCode(),
-                input.body()
+                input.apiKey(),
+                input.amount()
         );
 
-        paymentRepository.save(paymentEntity);
-        paymentOutboxRepository.save(paymentOutboxEntity);
+        paymentRepository.save(payment);
+        paymentOutboxRepository.save(paymentOutbox);
 
         return null;
     }

@@ -1,14 +1,6 @@
 package paycore.paycore.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -35,17 +27,14 @@ public class SettlementOutboxEntity {
     private UUID sagaId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private EventType eventType;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
     private OutboxStatus status;
 
     @Lob
     private String payload;
 
-    @Column(nullable = false)
     private LocalDateTime createdAt;
 
     private LocalDateTime sentAt;

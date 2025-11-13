@@ -1,13 +1,6 @@
 package paycore.paycore.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -36,22 +29,14 @@ public class SettlementEntity {
     @Column(nullable = false, unique = true)
     private UUID paymentId;
 
-    @Column(nullable = false)
-    private UUID orderId;
-
-    @Column(nullable = false)
     private BigDecimal amount;
 
-    @Column(nullable = false)
     private BigDecimal fee;
 
-    @Column(nullable = false)
-    private String settlementAccount;
+    private String apiKey;
 
-    @Column(nullable = false)
     private BigDecimal merchantPayoutAmount;
 
-    @Column(nullable = false)
     private BigDecimal platformFeeAmount;
 
     @Enumerated(EnumType.STRING)
