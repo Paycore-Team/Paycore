@@ -34,7 +34,7 @@ public class DebeziumMessageListener {
                 return null;
             }
             WorkerRequest workerRequest = new WorkerRequest(
-                    record.id(),
+                    record.orderId(),
                     record.sagaId(),
                     record.eventType(),
                     record.status(),

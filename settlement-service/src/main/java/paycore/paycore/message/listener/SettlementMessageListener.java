@@ -1,7 +1,5 @@
 package paycore.paycore.message.listener;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -12,39 +10,22 @@ import paycore.paycore.config.RabbitMqConfig;
 import paycore.paycore.dto.SettlementRequestDto;
 import paycore.paycore.entity.SettlementEntity;
 
-import java.math.BigDecimal;
-import java.util.UUID;
-
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class SettlementMessageListener {
 
-    private final ObjectMapper objectMapper;
     private final ProcessSettlementUseCase processSettlementUseCase;
 
     @Transactional
     @RabbitListener(queues = RabbitMqConfig.SETTLEMENT_QUEUE)
-    public void handleMessage(String message) {
+    public void handleMessage(SettlementRequestDto input) {
         try {
-            JsonNode node = objectMapper.readTree(message);
-            BigDecimal amount = node.get("amount").decimalValue();
-            BigDecimal fee = node.get("fee").decimalValue();
-
-            SettlementRequestDto request = new SettlementRequestDto(
-                    UUID.fromString(node.get("sagaId").asText()),
-                    UUID.fromString(node.get("paymentId").asText()),
-                    UUID.fromString(node.get("orderId").asText()),
-                    amount,
-                    fee,
-                    node.get("settlementAccount").asText()
-            );
-
-            SettlementEntity settlement = processSettlementUseCase.execute(request);
-            log.info("Settlement reservation created. sagaId={}, paymentId={}, orderId={}",
-                    settlement.getSagaId(), settlement.getPaymentId(), settlement.getOrderId());
+            SettlementEntity settlement = processSettlementUseCase.execute(input);
+            log.info("Settlement reservation created. sagaId={}, paymentId={}",
+                    settlement.getSagaId(), settlement.getPaymentId());
         } catch (Exception e) {
-            log.error("Failed to process settlement message: {}", message, e);
+            log.error("Failed to process settlement message: {}", input, e);
         }
     }
 }

@@ -26,7 +26,7 @@ public class MockService implements MockUseCase {
 
             @Override
             public String body() {
-                return "{\"ok\":true}";
+                return "ok";
             }
 
             @Override

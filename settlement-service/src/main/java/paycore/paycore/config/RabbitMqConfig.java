@@ -14,9 +14,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMqConfig {
 
-    public static final String SETTLEMENT_EXCHANGE = "settlement.exchange";
-    public static final String SETTLEMENT_QUEUE = "settlement.queue";
-    public static final String SETTLEMENT_ROUTING_KEY = "settlement.created";
+    public static final String SETTLEMENT_EXCHANGE = "payment-settlement.exchange";
+    public static final String SETTLEMENT_QUEUE = "payment-settlement.queue";
+    public static final String SETTLEMENT_ROUTING_KEY = "payment-settlement.created";
 
     @Bean
     public TopicExchange settlementExchange() {

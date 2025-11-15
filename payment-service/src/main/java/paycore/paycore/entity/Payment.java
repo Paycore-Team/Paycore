@@ -16,9 +16,11 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "payments")
-public class PaymentEntity {
+public class Payment {
     @Id
     private UUID paymentId;
+
+    private String apiKey;
 
     private BigDecimal amount;
 
@@ -27,8 +29,9 @@ public class PaymentEntity {
 
     private LocalDateTime createdAt;
 
-    public PaymentEntity(UUID paymentId, BigDecimal amount, Integer httpStatus) {
+    public Payment(UUID paymentId, String apiKey, BigDecimal amount, Integer httpStatus) {
         this.paymentId = paymentId;
+        this.apiKey = apiKey;
         this.amount = amount;
         this.status = mapStatus(httpStatus);
         this.createdAt = LocalDateTime.now();

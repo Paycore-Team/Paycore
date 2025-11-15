@@ -6,10 +6,9 @@ import java.util.UUID;
 public record SettlementRequestDto(
         UUID sagaId,
         UUID paymentId,
-        UUID orderId,
+        String apiKey,
         BigDecimal amount,
-        BigDecimal fee,
-        String settlementAccount
+        BigDecimal fee
 ) {
 }
 

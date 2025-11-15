@@ -50,6 +50,7 @@ public class OrderService implements PlaceOrderUseCase {
 
     private void createOutboxEvent(OrderEntity order, String eventType) {
         OrderOutboxEntity event = OrderOutboxEntity.builder()
+                .orderId(order.getId())
                 .sagaId(order.getSagaId())
                 .eventType(eventType)
                 .status(OutboxStatus.PENDING)

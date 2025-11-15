@@ -6,8 +6,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import paycore.paycore.domain.EventType;
 import paycore.paycore.domain.PaymentStatus;
-import paycore.paycore.entity.PaymentEntity;
-import paycore.paycore.entity.PaymentOutboxEntity;
+import paycore.paycore.entity.Payment;
+import paycore.paycore.entity.PaymentOutbox;
 import paycore.paycore.repository.PaymentOutboxRepository;
 import paycore.paycore.repository.PaymentRepository;
 import paycore.paycore.usecase.SettlementMessageHandlerUseCase;
@@ -32,20 +32,20 @@ public class SettlementMessageHandlerService implements SettlementMessageHandler
 
         log.warn("Settlement Failure for sagaId : {}", input.sagaId());
 
-        PaymentOutboxEntity paymentOutboxEntity = paymentOutboxRepository.findBySagaId(input.sagaId()).orElseThrow(() -> new EntityNotFound(input.sagaId()));
-        PaymentEntity paymentEntity = paymentRepository.findByPaymentId(paymentOutboxEntity.getPaymentId()).orElseThrow(() -> new EntityNotFound(input.sagaId()));
-        paymentOutboxEntity.setEventType(EventType.FAILURE);
-        paymentEntity.setStatus(PaymentStatus.FAILED);
+        PaymentOutbox paymentOutbox = paymentOutboxRepository.findBySagaId(input.sagaId()).orElseThrow(() -> new EntityNotFound(input.sagaId()));
+        Payment payment = paymentRepository.findByPaymentId(paymentOutbox.getPaymentId()).orElseThrow(() -> new EntityNotFound(input.sagaId()));
+        paymentOutbox.setEventType(EventType.FAILURE);
+        payment.setStatus(PaymentStatus.FAILED);
 
-        paymentOutboxRepository.save(paymentOutboxEntity);
-        paymentRepository.save(paymentEntity);
+        paymentOutboxRepository.save(paymentOutbox);
+        paymentRepository.save(payment);
 
         return null;
     }
 
     private class EntityNotFound extends RuntimeException {
         public EntityNotFound(UUID entityId) {
-            super("Entity with saga id " + entityId + " not found");
+            super("Entity with saga orderId " + entityId + " not found");
         }
     }
 }

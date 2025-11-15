@@ -19,12 +19,11 @@ import java.util.UUID;
 @Table(name = "orders")
 public class OrderEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     private UUID sagaId;
 
-    @Column(unique = true)
     private UUID idempotencyKey; // 일단 Entity 에 저장
 
     private String apiKey;

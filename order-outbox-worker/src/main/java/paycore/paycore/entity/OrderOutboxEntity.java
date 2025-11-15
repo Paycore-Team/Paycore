@@ -18,7 +18,7 @@ import java.util.UUID;
 public class OrderOutboxEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Long orderId;
 
     private UUID sagaId;
 

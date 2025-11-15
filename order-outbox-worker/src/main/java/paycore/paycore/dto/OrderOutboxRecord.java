@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 public record OrderOutboxRecord(
-        Long id,
+        Long orderId,
         UUID sagaId,
         String eventType,
         OutboxStatus status,
