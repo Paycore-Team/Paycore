@@ -58,6 +58,7 @@ public class SettlementService implements ProcessSettlementUseCase {
             String payload = objectMapper.writeValueAsString(settlement);
 
             SettlementOutboxEntity event = SettlementOutboxEntity.builder()
+                    .settlementId(settlement.getId())
                     .sagaId(settlement.getSagaId())
                     .eventType(eventType)
                     .status(OutboxStatus.PENDING)

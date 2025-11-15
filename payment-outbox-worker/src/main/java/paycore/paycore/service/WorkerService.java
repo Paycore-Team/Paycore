@@ -15,24 +15,18 @@ import paycore.paycore.usecase.model.WorkerRequest;
 public class WorkerService implements WorkerUseCase {
     private final RabbitMqPublisher rabbitMqPublisher;
 
-    public static final String PAYMENT_SETTLEMENT_EXCHANGE = "payment-settlement.exchange";
-    public static final String PAYMENT_SETTLEMENT_ROUTING_KEY = "payment-settlement.created";
-    public static final String ORDER_EXCHANGE = "order.exchange";
-    public static final String ORDER_ROUTING_KEY = "order.create";
+    public static final String PAYMENT_EXCHANGE = "payment.exchange";
+    public static final String PAYMENT_SUCCESS_ROUTING_KEY = "payment.success";
+    public static final String PAYMENT_FAILURE_ROUTING_KEY = "payment.failure";
 
 
     @Override
     public Void execute(WorkerRequest input) {
+        String routingKey = input.eventType() == EventType.SUCCESS ? PAYMENT_SUCCESS_ROUTING_KEY : PAYMENT_FAILURE_ROUTING_KEY;
         CorrelationData correlationData = new CorrelationData(input.sagaId().toString());
-        if (input.eventType() == EventType.SUCCESS) {
-            rabbitMqPublisher.publish(PAYMENT_SETTLEMENT_EXCHANGE, PAYMENT_SETTLEMENT_ROUTING_KEY, input, correlationData);
+        rabbitMqPublisher.publish(PAYMENT_EXCHANGE, routingKey, input, correlationData);
 
-            log.info("Saga [{}] has been published successfully to {}", input.sagaId(), PAYMENT_SETTLEMENT_EXCHANGE);
-        } else {
-            rabbitMqPublisher.publish(ORDER_EXCHANGE, ORDER_ROUTING_KEY, input, correlationData);
-
-            log.info("Saga [{}] has been published successfully to {}", input.sagaId(), ORDER_EXCHANGE);
-        }
+        log.info("Saga [{}] has been published successfully with routing key {}", input.sagaId(), routingKey);
 
         return null;
     }

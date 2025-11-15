@@ -18,7 +18,7 @@ public class SettlementMessageListener {
     private final ProcessSettlementUseCase processSettlementUseCase;
 
     @Transactional
-    @RabbitListener(queues = RabbitMqConfig.SETTLEMENT_QUEUE)
+    @RabbitListener(queues = RabbitMqConfig.PAYMENT_SETTLEMENT_QUEUE)
     public void handleMessage(SettlementRequestDto input) {
         try {
             SettlementEntity settlement = processSettlementUseCase.execute(input);

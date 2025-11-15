@@ -5,6 +5,6 @@ import paycore.paycore.entity.OrderEntity;
 
 import java.util.UUID;
 
-public interface OrderRepository extends JpaRepository<OrderEntity, UUID> {
+public interface OrderRepository extends JpaRepository<OrderEntity, Long> {
     OrderEntity findByIdempotencyKey(UUID idempotencyKey);
 }

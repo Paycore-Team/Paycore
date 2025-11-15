@@ -112,7 +112,7 @@ public class PaymentService implements PaymentUseCase {
                 }
             }
 
-            log.info("Payment request succeeded.\nSagaId : {}\n, orderNo : {}\n",
+            log.info("Payment request succeeded.SagaId : {}, orderNo : {}",
                     input.sagaId(),
                     input.orderId()
             );
@@ -134,7 +134,7 @@ public class PaymentService implements PaymentUseCase {
 
     private class RecordAlreadyLeased extends UseCase.Exception {
         public RecordAlreadyLeased() {
-            super("Resource is already leased by another process\n");
+            super("Resource is already leased by another process");
         }
     }
 
