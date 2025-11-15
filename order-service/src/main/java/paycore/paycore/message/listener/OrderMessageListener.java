@@ -28,7 +28,7 @@ public class OrderMessageListener {
      * JSON 문자열을 파싱하여 상태 업데이트 수행
      */
     @Transactional
-    @RabbitListener(queues = RabbitMqConfig.ORDER_QUEUE)
+    @RabbitListener(queues = RabbitMqConfig.PAYMENT_ORDER_QUEUE)
     public void handleMessage(String message) {
         try {
             log.info("Received message from MQ: {}", message);

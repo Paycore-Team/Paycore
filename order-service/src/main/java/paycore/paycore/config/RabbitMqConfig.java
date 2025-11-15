@@ -9,24 +9,32 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMqConfig {
-    public static final String ORDER_EXCHANGE = "payment.exchange";
-    public static final String ORDER_QUEUE = "payment.queue";
-    public static final String ROUTING_KEY = "payment.created";
+    public static final String PAYMENT_EXCHANGE = "payment.exchange";
+    public static final String PAYMENT_ORDER_QUEUE = "payment-order.queue";
+    public static final String PAYMENT_SUCCESS_ROUTING_KEY = "payment.success";
+    public static final String PAYMENT_FAILURE_ROUTING_KEY = "payment.failure";
 
     @Bean
-    public DirectExchange orderExchange() {
-        return new DirectExchange(ORDER_EXCHANGE);
+    public DirectExchange paymentExchange() {
+        return new DirectExchange(PAYMENT_EXCHANGE);
     }
 
     @Bean
-    public Queue orderQueue() {
-        return new Queue(ORDER_QUEUE, true);
+    public Queue paymentOrderQueue() {
+        return new Queue(PAYMENT_ORDER_QUEUE, true);
     }
 
     @Bean
-    public Binding orderBinding() {
-        return BindingBuilder.bind(orderQueue())
-                .to(orderExchange())
-                .with(ROUTING_KEY);
+    public Binding paymentOrderSuccessBinding() {
+        return BindingBuilder.bind(paymentOrderQueue())
+                .to(paymentExchange())
+                .with(PAYMENT_SUCCESS_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding paymentOrderFailureBinding() {
+        return BindingBuilder.bind(paymentOrderQueue())
+                .to(paymentExchange())
+                .with(PAYMENT_FAILURE_ROUTING_KEY);
     }
 }

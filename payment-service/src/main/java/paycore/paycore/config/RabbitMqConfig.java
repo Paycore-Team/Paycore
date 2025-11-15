@@ -1,6 +1,9 @@
 package paycore.paycore.config;
 
-import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.DirectExchange;
+import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -9,13 +12,14 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class RabbitMqConfig {
-    public static final String ORDER_PAYMENT_EXCHANGE = "order-payment.exchange";
+    public static final String ORDER_EXCHANGE = "order.exchange";
     public static final String ORDER_PAYMENT_QUEUE = "order-payment.queue";
-    public static final String ORDER_PAYMENT_ROUTING_KEY = "order-payment.created";
+    public static final String ORDER_SUCCESS_ROUTING_KEY = "order.success";
 
     public static final String SETTLEMENT_EXCHANGE = "settlement.exchange";
-    public static final String SETTLEMENT_QUEUE = "settlement.queue";
-    public static final String SETTLEMENT_ROUTING_KEY = "settlement.created";
+    public static final String SETTLEMENT_PAYMENT_QUEUE = "settlement-payment.queue";
+    public static final String SETTLEMENT_SUCCESS_ROUTING_KEY = "settlement.success";
+    public static final String SETTLEMENT_FAILURE_ROUTING_KEY = "settlement.failure";
 
     @Bean
     public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
@@ -37,36 +41,43 @@ public class RabbitMqConfig {
     }
 
     @Bean
-    public DirectExchange paymentDirectExchange() {
-        return new DirectExchange(ORDER_PAYMENT_EXCHANGE);
+    public DirectExchange orderExchange() {
+        return new DirectExchange(ORDER_EXCHANGE);
     }
 
     @Bean
-    public Queue paymentQueue() {
+    public Queue orderPaymentQueue() {
         return new Queue(ORDER_PAYMENT_QUEUE);
     }
 
     @Bean
-    public Binding paymentBinding() {
-        return BindingBuilder.bind(paymentQueue())
-                .to(paymentDirectExchange())
-                .with(ORDER_PAYMENT_ROUTING_KEY);
+    public Binding orderPaymentSuccessBinding() {
+        return BindingBuilder.bind(orderPaymentQueue())
+                .to(orderExchange())
+                .with(ORDER_SUCCESS_ROUTING_KEY);
     }
 
     @Bean
-    public TopicExchange settlementTopicExchange() {
-        return new TopicExchange(SETTLEMENT_EXCHANGE);
+    public DirectExchange settlementExchange() {
+        return new DirectExchange(SETTLEMENT_EXCHANGE);
     }
 
     @Bean
-    public Queue settlemnetQueue() {
-        return new Queue(SETTLEMENT_QUEUE);
+    public Queue settlementPaymentQueue() {
+        return new Queue(SETTLEMENT_PAYMENT_QUEUE);
     }
 
     @Bean
-    public Binding settlemnetBinding() {
-        return BindingBuilder.bind(settlemnetQueue())
-                .to(settlementTopicExchange())
-                .with(SETTLEMENT_ROUTING_KEY);
+    public Binding settlementPaymentSuccessBinding() {
+        return BindingBuilder.bind(settlementPaymentQueue())
+                .to(settlementExchange())
+                .with(SETTLEMENT_SUCCESS_ROUTING_KEY);
+    }
+
+    @Bean
+    public Binding settlementPaymentFailureBinding() {
+        return BindingBuilder.bind(settlementPaymentQueue())
+                .to(settlementExchange())
+                .with(SETTLEMENT_FAILURE_ROUTING_KEY);
     }
 }
