@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import paycore.paycore.domain.EventType;
+import paycore.paycore.domain.OutboxStatus;
 import paycore.paycore.domain.PaymentStatus;
 import paycore.paycore.entity.Payment;
 import paycore.paycore.entity.PaymentOutbox;
@@ -35,6 +36,7 @@ public class SettlementMessageHandlerService implements SettlementMessageHandler
         PaymentOutbox paymentOutbox = paymentOutboxRepository.findBySagaId(input.sagaId()).orElseThrow(() -> new EntityNotFound(input.sagaId()));
         Payment payment = paymentRepository.findByPaymentId(paymentOutbox.getPaymentId()).orElseThrow(() -> new EntityNotFound(input.sagaId()));
         paymentOutbox.setEventType(EventType.FAILURE);
+        paymentOutbox.setStatus(OutboxStatus.PENDING);
         payment.setStatus(PaymentStatus.FAILED);
 
         paymentOutboxRepository.save(paymentOutbox);

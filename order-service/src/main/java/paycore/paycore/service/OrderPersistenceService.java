@@ -6,8 +6,6 @@ import paycore.paycore.application.usecase.FindOrderUseCase;
 import paycore.paycore.entity.OrderEntity;
 import paycore.paycore.repository.OrderRepository;
 
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
 public class OrderPersistenceService implements FindOrderUseCase {
@@ -15,7 +13,7 @@ public class OrderPersistenceService implements FindOrderUseCase {
     private final OrderRepository orderRepository;
 
     @Override
-    public OrderEntity execute(UUID orderId) {
+    public OrderEntity execute(Long orderId) {
         return orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
     }
