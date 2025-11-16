@@ -9,12 +9,9 @@ import paycore.paycore.usecase.model.WorkerRequest;
 @Component
 @RequiredArgsConstructor
 public class RabbitMqPublisher {
-    public static final String ORDER_EXCHANGE = "order.exchange";
-    public static final String ORDER_SUCCESS_ROUTING_KEY = "order.success";
-
     private final RabbitTemplate rabbitTemplate;
 
-    public void publish(WorkerRequest input, CorrelationData correlationData) {
-        rabbitTemplate.convertAndSend(ORDER_EXCHANGE, ORDER_SUCCESS_ROUTING_KEY, input, correlationData);
+    public void publish(String exchange, String routingKey, WorkerRequest input, CorrelationData correlationData) {
+        rabbitTemplate.convertAndSend(exchange, routingKey, input, correlationData);
     }
 }

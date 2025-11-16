@@ -1,5 +1,6 @@
 package paycore.paycore.dto;
 
+import paycore.paycore.domain.EventType;
 import paycore.paycore.domain.OutboxStatus;
 
 import java.math.BigDecimal;
@@ -8,7 +9,7 @@ import java.util.UUID;
 public record OrderOutboxRecord(
         Long orderId,
         UUID sagaId,
-        String eventType,
+        EventType eventType,
         OutboxStatus status,
         String apiKey,
         String productDesc,
