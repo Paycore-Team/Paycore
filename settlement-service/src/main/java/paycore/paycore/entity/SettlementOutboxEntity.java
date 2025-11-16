@@ -20,8 +20,7 @@ import java.util.UUID;
 public class SettlementOutboxEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    private UUID settlementId;
 
     @Column(nullable = false)
     private UUID sagaId;

@@ -6,7 +6,7 @@ import paycore.paycore.domain.OutboxStatus;
 import java.util.UUID;
 
 public record SettlementMessageHandlerServiceRequest(
-        UUID id,
+        UUID settlementId,
         UUID sagaId,
         EventType eventType,
         OutboxStatus status,

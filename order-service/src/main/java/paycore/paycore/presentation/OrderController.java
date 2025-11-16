@@ -8,8 +8,6 @@ import paycore.paycore.application.usecase.PlaceOrderUseCase;
 import paycore.paycore.dto.OrderRequestDto;
 import paycore.paycore.entity.OrderEntity;
 
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
@@ -27,7 +25,7 @@ public class OrderController {
 
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<OrderEntity> getOrder(@PathVariable UUID orderId) {
+    public ResponseEntity<OrderEntity> getOrder(@PathVariable Long orderId) {
         OrderEntity order = findOrderUseCase.execute(orderId);
         return ResponseEntity.ok(order);
     }
