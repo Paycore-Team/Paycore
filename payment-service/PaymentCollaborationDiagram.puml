@@ -1,0 +1,43 @@
+@startuml
+skinparam linetype ortho
+top to bottom direction
+
+skinparam ranksep 100
+skinparam nodesep 320
+
+' ===== 객체 정의 =====
+object "PaymentMessageListener" as listener
+object "PaymentService" as service
+object "ExternalPG" as externalPG
+object "PaymentPersistenceService" as persistence
+object "PaymentRepository" as paymentRepo
+object "PaymentOutboxRepository" as outboxRepo
+
+' ===== 레이아웃 힌트 =====
+' 메인 체인: Listener ↓ Service ↓ Persistence ↓ Repo ↓ OutboxRepo
+listener -[hidden]d-> service
+service  -[hidden]d-> persistence
+persistence -[hidden]d-> paymentRepo
+paymentRepo -[hidden]d-> outboxRepo
+
+' ExternalPG 를 PaymentService 오른쪽에 두기
+service -[hidden]r-> externalPG
+
+' ===== 실제 메시지 =====
+listener -down-> service : 1: onMessage(paymentRequest)
+
+service --> externalPG : 1.1: requestPayment
+externalPG --> service : 1.2: returnPaymentResult
+
+service -down-> persistence : 2: execute(paymentPersistenceRequest)
+
+persistence -down-> paymentRepo : 2.1.1: save(payment)
+persistence -down-> outboxRepo : 2.2.2: save(paymentOutbox)
+
+note right of persistence
+2.1.1, 2.2.2는
+동일 트랜잭션에서
+원자적으로 처리됨
+end note
+
+@enduml
