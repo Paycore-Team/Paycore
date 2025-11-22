@@ -1,0 +1,31 @@
+@startuml
+skinparam linetype ortho
+top to bottom direction
+
+skinparam ranksep 100
+skinparam nodesep 220
+
+' ===== 객체 정의 =====
+object "OrderController" as controller
+object "OrderService" as service
+object "OrderRepository" as orderRepo
+object "OrderOutboxRepository" as outboxRepo
+
+' ===== 레이아웃 힌트 =====
+' 메인 체인: Listener ↓ Service ↓ Persistence ↓ Repo ↓ OutboxRepo
+controller -[hidden]d-> service
+orderRepo -[hidden]d-> outboxRepo
+
+' ===== 실제 메시지 =====
+controller -down-> service : 1: execute(orderRequest)
+
+service -down-> orderRepo : 2.1.1: save(order)
+service -down-> outboxRepo : 2.2.2: save(orderOutbox)
+
+note right of service
+2.1.1, 2.2.2는
+동일 트랜잭션에서
+원자적으로 처리됨
+end note
+
+@enduml

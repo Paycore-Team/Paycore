@@ -1,0 +1,25 @@
+@startuml
+skinparam linetype ortho
+top to bottom direction
+
+skinparam ranksep 100
+skinparam nodesep 220
+
+' ===== 객체 정의 =====
+object "OrderController" as controller
+object "GetOrderService" as service
+object "OrderRepository" as orderRepo
+
+' ===== 레이아웃 힌트 =====
+controller -[hidden]d-> service
+service -[hidden]d-> orderRepo
+
+' ===== 실제 메시지 =====
+controller -down-> service : 1: execute(getOrderRequest)
+
+service -down-> orderRepo : 2: findById(orderId)
+
+orderRepo --> service : 3: Order
+
+service --> controller : 4: GetOrderResponse(order)
+@enduml
