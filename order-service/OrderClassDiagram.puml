@@ -2,10 +2,11 @@
 skinparam linetype ortho
 package "Order Service" {
 skinparam ranksep 120
-skinparam nodesep 80
+skinparam nodesep 150
 
 GetOrderService -[hidden]l-> OrderRequest
 GetOrderService -[hidden]d-> JpaRepository
+GetOrderRequest -[hidden]r-> OrderRequest
 
   class Order {
     +orderId: Long

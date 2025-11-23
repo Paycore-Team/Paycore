@@ -3,41 +3,71 @@ skinparam linetype ortho
 top to bottom direction
 
 skinparam ranksep 100
-skinparam nodesep 320
+skinparam nodesep 250
 
 ' ===== 객체 정의 =====
 object "PaymentMessageListener" as listener
 object "PaymentService" as service
+object "Redis\n(IdempotencyStore)" as redis
 object "ExternalPG" as externalPG
 object "PaymentPersistenceService" as persistence
 object "PaymentRepository" as paymentRepo
 object "PaymentOutboxRepository" as outboxRepo
+object "PaymentOutboxWorker" as outboxWorker
+object "MessageBroker\n(RabbitMQ)" as broker
 
 ' ===== 레이아웃 힌트 =====
-' 메인 체인: Listener ↓ Service ↓ Persistence ↓ Repo ↓ OutboxRepo
-listener -[hidden]d-> service
-service  -[hidden]d-> persistence
-persistence -[hidden]d-> paymentRepo
-paymentRepo -[hidden]d-> outboxRepo
 
-' ExternalPG 를 PaymentService 오른쪽에 두기
-service -[hidden]r-> externalPG
+redis -[hidden]right-> service
+service -[hidden]right-> externalPG
+
+listener -[hidden]down-> service
+service  -[hidden]down-> persistence
+persistence -[hidden]down-> outboxWorker
+outboxWorker -[hidden]down-> broker
+
+persistence -[hidden]down-> paymentRepo
+persistence -[hidden]down-> outboxRepo
+paymentRepo -[hidden]right-> outboxRepo
 
 ' ===== 실제 메시지 =====
-listener -down-> service : 1: onMessage(paymentRequest)
 
-service --> externalPG : 1.1: requestPayment
-externalPG --> service : 1.2: returnPaymentResult
+listener -down-> service : 1: 결제 요청 메시지 수신(onMessage)
 
-service -down-> persistence : 2: execute(paymentPersistenceRequest)
+' ---- idempotency key 검증 ----
+service -left-> redis  : 1.0.1: idempotency key 조회 요청
+redis   -right-> service : 1.0.2: idempotency 조회 결과 반환
+service -up-> listener  : 1.0.3: 기처리된 요청 결과 반환
 
-persistence -down-> paymentRepo : 2.1.1: save(payment)
-persistence -down-> outboxRepo : 2.2.2: save(paymentOutbox)
+note left of service
+1.0.2 결과가 "이미 처리"인 경우 →
+  1.0.3 응답 반환 후 종료
+1.0.2 결과가 "미처리"인 경우 →
+  1.1부터 신규 결제 처리 계속
+end note
+
+' ---- 신규 결제 처리 ----
+service -right-> externalPG : 1.1: 결제 요청 전송
+externalPG -left-> service  : 1.2: 결제 결과 반환
+
+service -down-> persistence : 2: 결제 정보 저장 요청
+
+persistence -down-> paymentRepo : 2.1.1: 결제 엔티티 저장
+persistence -down-> outboxRepo  : 2.1.2: Outbox 이벤트 저장
 
 note right of persistence
-2.1.1, 2.2.2는
+2.1.1, 2.1.2는
 동일 트랜잭션에서
-원자적으로 처리됨
+원자적으로 저장됨
 end note
+
+' ---- Outbox 워커 처리 ----
+outboxWorker -up-> outboxRepo : 3: 처리되지 않은 Outbox 조회
+outboxRepo   -down-> outboxWorker : 4: 조회 결과 반환
+
+outboxWorker -down-> broker : 5: Payment 이벤트 발행
+broker       -up-> outboxWorker : 6: ACK 응답
+
+outboxWorker -up-> outboxRepo : 7: Outbox 상태 COMPLETED로 업데이트
 
 @enduml

@@ -1,0 +1,48 @@
+@startuml
+skinparam linetype ortho
+title Clean Architecture Service Structure
+
+' 공통 UseCase 인터페이스
+interface UseCase<I, O> {
+  +execute(input: I): O
+}
+
+' 서비스별 UseCase 인터페이스
+interface ExampleUseCase {
+  +execute(input: ExampleRequest): ExampleResult
+}
+
+' UseCase 구현 서비스
+class ExampleService {
+  -repository: ExampleRepository
+  +execute(input: ExampleRequest): ExampleResult
+}
+
+' 도메인 엔티티(예시)
+class ExampleEntity {
+  +id: Long
+  ..domain fields..
+}
+
+' 입력/출력 DTO
+class ExampleRequest
+class ExampleResult
+
+' 스프링 JPA 공통 레포지토리
+interface JpaRepository {
+}
+
+' 도메인 레포지토리 인터페이스
+interface ExampleRepository {
+  +save(aggregate: ExampleEntity)
+  +findById(id: Long): Optional<ExampleEntity>
+}
+
+' 관계 정의
+UseCase <|-- ExampleUseCase
+ExampleUseCase <|.. ExampleService
+
+ExampleService --> ExampleRepository
+JpaRepository <|-- ExampleRepository
+
+@enduml
