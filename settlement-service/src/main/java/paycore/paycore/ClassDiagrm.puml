@@ -94,13 +94,7 @@ class SettlementBatchTasklet {
     +execute(StepContribution, ChunkContext): RepeatStatus
 }
 
-' Message Listener
-class SettlementMessageListener {
-    -ProcessSettlementUseCase processSettlementUseCase
-    +onMessage(String): void
-}
-
-' Scheduler & Config
+' Scheduler
 class SettlementBatchScheduler {
     -JobLauncher jobLauncher
     -Job settlementJob
@@ -129,10 +123,8 @@ SettlementBatchTasklet --> SettlementOutboxRepository
 SettlementBatchTasklet --> SettlementEntity
 SettlementBatchTasklet --> SettlementOutboxEntity
 
-' Relationships - Listener Dependencies
-SettlementMessageListener --> ProcessSettlementUseCase
-
 ' Relationships - Batch Dependencies
+' Note: SettlementBatchScheduler periodically executes SettlementBatchTasklet via Spring Batch Job
 SettlementBatchScheduler --> SettlementBatchTasklet
 
 ' Relationships - Entity to Enum
