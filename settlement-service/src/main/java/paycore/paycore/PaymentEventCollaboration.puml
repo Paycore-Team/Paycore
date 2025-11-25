@@ -1,0 +1,53 @@
+@startuml
+skinparam linetype ortho
+skinparam nodesep 350
+skinparam ranksep 120
+skinparam objectBackgroundColor #E8F4F8
+
+title Payment Event Processing Collaboration
+
+' Layer 1: Infrastructure
+object listener as "listener"
+
+' Layer 2: Use Case
+object useCase as "useCase"
+
+' Layer 3: Service
+object service as "service"
+
+' Layer 4: Repository
+object repo as "repo"
+object outboxRepo as "outboxRepo"
+
+' Layer 5: Entity
+object entity as "entity"
+object outbox as "outbox"
+
+' ============================================
+' Step 1: Process Settlement Request
+' ============================================
+listener -down-> useCase : "1: execute"
+useCase -down-> service : "2: execute"
+
+' ============================================
+' Step 2: Check Existing Settlement
+' ============================================
+service -down-> repo : "3: find"
+repo -up-> service : "4: empty"
+
+' ============================================
+' Step 3: Create New Settlement
+' ============================================
+service -down-> entity : "5: create"
+service -right-> repo : "6: save"
+service -down-> outbox : "7: create"
+service -down-> outboxRepo : "8: save"
+
+' ============================================
+' Step 4: Return Result
+' ============================================
+service -up-> useCase : "9: return"
+useCase -up-> listener : "10: return"
+
+@enduml
+

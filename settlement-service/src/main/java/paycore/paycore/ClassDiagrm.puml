@@ -1,115 +1,147 @@
 @startuml
-title Settlement Module Class Diagram
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
 
-package "paycore.paycore" {
-    package common {
-        interface UseCase<I,O>
-    }
 
-    package dto {
-        class SettlementRequestDto
-    }
-
-    package domain {
-        enum SettlementStatus
-        enum EventType
-        enum OutboxStatus
-    }
-
-    package entity {
-        class SettlementEntity {
-            uuid id
-            uuid sagaId
-            uuid paymentId
-            uuid orderId
-            BigDecimal amount
-            BigDecimal fee
-            String settlementAccount
-            BigDecimal merchantPayoutAmount
-            BigDecimal platformFeeAmount
-            SettlementStatus status
-            LocalDateTime settledAt
-            +markCompleted(BigDecimal payout, BigDecimal platformFee)
-            +markFailed()
-        }
-
-        class SettlementOutboxEntity {
-            uuid id
-            uuid sagaId
-            EventType eventType
-            OutboxStatus status
-            String payload
-            LocalDateTime createdAt
-            LocalDateTime sentAt
-            +markSent()
-            +markFailed()
-        }
-    }
-
-    package repository {
-        interface SettlementRepository
-        interface SettlementOutboxRepository
-    }
-
-    package application.usecase {
-        interface ProcessSettlementUseCase
-        interface FindSettlementUseCase
-    }
-
-    package service {
-        class SettlementService
-        class SettlementPersistenceService
-        class SettlementBatchTasklet
-    }
-
-    package message.listener {
-        class SettlementMessageListener
-    }
-
-    package config {
-        class RabbitMqConfig
-        class SettlementBatchConfig
-    }
-
-    package scheduler {
-        class SettlementBatchScheduler
-    }
+' Domain Enums
+enum SettlementStatus {
+    PENDING
+    COMPLETED
+    FAILED
 }
 
+enum EventType {
+    SUCCESS
+    FAILURE
+}
+
+enum OutboxStatus {
+    PENDING
+    SENT
+    FAILED
+}
+
+' Common Interface
+interface UseCase<I, O> {
+    +execute(I input): O
+}
+
+
+
+' Entities
+class SettlementEntity {
+    -UUID id
+    -UUID sagaId
+    -UUID paymentId
+    -BigDecimal amount
+    -BigDecimal fee
+    -String apiKey
+    -BigDecimal merchantPayoutAmount
+    -BigDecimal platformFeeAmount
+    -SettlementStatus status
+    -LocalDateTime settledAt
+    +markCompleted(BigDecimal, BigDecimal)
+    +markFailed()
+}
+
+class SettlementOutboxEntity {
+    -UUID settlementId
+    -UUID sagaId
+    -EventType eventType
+    -OutboxStatus status
+    -String payload
+    -LocalDateTime createdAt
+    -LocalDateTime sentAt
+    +markSent()
+    +markFailed()
+}
+
+' Repositories
+interface SettlementRepository {
+    +save(SettlementEntity): SettlementEntity
+    +findByPaymentId(UUID): Optional<SettlementEntity>
+    +findAllByStatus(SettlementStatus): List<SettlementEntity>
+}
+
+interface SettlementOutboxRepository {
+    +save(SettlementOutboxEntity): SettlementOutboxEntity
+}
+
+' Use Cases
+interface ProcessSettlementUseCase {
+    +execute(SettlementRequestDto): SettlementEntity
+}
+
+interface FindSettlementUseCase {
+    +execute(UUID): SettlementEntity
+}
+
+' Services
+class SettlementService {
+    -SettlementRepository settlementRepository
+    -SettlementOutboxRepository settlementOutboxRepository
+    +execute(SettlementRequestDto): SettlementEntity
+}
+
+class SettlementPersistenceService {
+    -SettlementRepository settlementRepository
+    +execute(UUID): SettlementEntity
+}
+
+class SettlementBatchTasklet {
+    -SettlementRepository settlementRepository
+    -SettlementOutboxRepository settlementOutboxRepository
+    +execute(StepContribution, ChunkContext): RepeatStatus
+}
+
+' Message Listener
+class SettlementMessageListener {
+    -ProcessSettlementUseCase processSettlementUseCase
+    +onMessage(String): void
+}
+
+' Scheduler & Config
+class SettlementBatchScheduler {
+    -JobLauncher jobLauncher
+    -Job settlementJob
+    +runSettlementJob(): void
+}
+
+
+' Relationships - Inheritance
 UseCase <|.. ProcessSettlementUseCase
 UseCase <|.. FindSettlementUseCase
 
+' Relationships - Implementation
 ProcessSettlementUseCase <|.. SettlementService
 FindSettlementUseCase <|.. SettlementPersistenceService
 
+' Relationships - Service Dependencies
 SettlementService --> SettlementRepository
 SettlementService --> SettlementOutboxRepository
-SettlementService --> SettlementRequestDto
 SettlementService --> SettlementEntity
 SettlementService --> SettlementOutboxEntity
 
 SettlementPersistenceService --> SettlementRepository
-SettlementMessageListener --> ProcessSettlementUseCase
-SettlementMessageListener --> SettlementRequestDto
-SettlementMessageListener --> RabbitMqConfig
 
 SettlementBatchTasklet --> SettlementRepository
 SettlementBatchTasklet --> SettlementOutboxRepository
 SettlementBatchTasklet --> SettlementEntity
 SettlementBatchTasklet --> SettlementOutboxEntity
 
-SettlementBatchConfig --> SettlementBatchTasklet
-SettlementBatchConfig --> SettlementBatchScheduler
-SettlementBatchScheduler --> "JobLauncher"
-SettlementBatchScheduler --> "Job settlementJob"
+' Relationships - Listener Dependencies
+SettlementMessageListener --> ProcessSettlementUseCase
 
-RabbitMqConfig ..> "TopicExchange"
-RabbitMqConfig ..> "Queue"
+' Relationships - Batch Dependencies
+SettlementBatchScheduler --> SettlementBatchTasklet
 
-SettlementRepository -left-|> "JpaRepository<SettlementEntity, UUID>"
-SettlementOutboxRepository -left-|> "JpaRepository<SettlementOutboxEntity, UUID>"
-
+' Relationships - Entity to Enum
 SettlementEntity --> SettlementStatus
 SettlementOutboxEntity --> EventType
 SettlementOutboxEntity --> OutboxStatus
+
+' Relationships - Repository to JPA
+SettlementRepository ..|> JpaRepository
+SettlementOutboxRepository ..|> JpaRepository
+
 @enduml
