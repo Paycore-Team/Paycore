@@ -2,7 +2,6 @@
 skinparam linetype ortho
 skinparam nodesep 200
 skinparam ranksep 120
-skinparam objectBackgroundColor #E8F4F8
 
 title Batch Settlement Processing Collaboration
 

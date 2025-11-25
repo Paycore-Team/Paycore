@@ -2,7 +2,6 @@
 skinparam linetype ortho
 skinparam nodesep 350
 skinparam ranksep 120
-skinparam objectBackgroundColor #E8F4F8
 
 title Payment Event Processing Collaboration
 
