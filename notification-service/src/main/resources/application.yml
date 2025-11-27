@@ -26,3 +26,20 @@ logging:
   level:
     org.springframework: INFO
     org.hibernate.SQL: DEBUG
+
+# =====================================
+# 🔥 Actuator + Prometheus
+# =====================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: notification-service
+  prometheus:
+    enabled: true

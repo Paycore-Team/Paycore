@@ -27,51 +27,58 @@ spring:
     show-sql: true
     open-in-view: false
 
+# ================================
+# 🔥 Actuator + Prometheus 설정 추가
+# ================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: payment-outbox-worker
+  prometheus:
+    enabled: true
+
+# ================================
+# Debezium 설정 (원래 있던 것)
+# ================================
 debezium:
-  # Spring Integration Debezium wrapper 용 옵션
-  payloadFormat: JSON # 수신된 이벤트의 키/값을 Json 으로 직렬화하도록 설정. 성능 개선 필요 시 PROTOBUF 로 변경 고려
-  offsetCommitPolicy: DEFAULT # 오프셋 커밋 정책 설정. DEFAULT(= PERIODIC), ALWAYS: 각 이벤트마다(성능 저하), PERIODIC: 일정 주기마다
+  payloadFormat: JSON
+  offsetCommitPolicy: DEFAULT
 
   properties:
     name: payment-worker-connector
-    # (필수) CDC 소스 데이터베이스 타입
     connector.class: io.debezium.connector.postgresql.PostgresConnector
 
-    # Postgres 접속 정보
     database.hostname: payment-postgres
     database.port: 5432
     database.user: ${SPRING_DATASOURCE_USERNAME:paymentuser}
     database.password: ${SPRING_DATASOURCE_PASSWORD:paymentpass}
     database.dbname: paymentdb
 
-    # 변경 로그 디코딩 플러그인
-    plugin.name: pgoutput # pgoutput 이 표준
+    plugin.name: pgoutput
 
-    # 이벤트 토픽 이름 접두사. Debezium 은 변경 이벤트를 토픽 형태로 발행함.
     topic.prefix: paymentdb
 
-    # replication slot / publication 설정
     slot.name: replication_slot
     publication.name: publication1
-    publication.autocreate.mode: filtered # publication 에 포함될 테이블을 필터에 따라 결정
-    table.include.list: public.payment_outbox # filtered 모드에서 필요한 테이블 필터
+    publication.autocreate.mode: filtered
+    table.include.list: public.payment_outbox
 
-    # offset
-    offset.storage: org.apache.kafka.connect.storage.FileOffsetBackingStore # 오프셋을 파일에 저장
+    offset.storage: org.apache.kafka.connect.storage.FileOffsetBackingStore
     offset.storage.file.filename: /etc/debezium/offsets.dat
-    offset.flush.interval.ms: 6000  # 오프셋을 저장 주기를 10초로 설정
+    offset.flush.interval.ms: 6000
 
-    # schema
-    schema.history.internal: io.debezium.relational.history.FileSchemaHistory # 스키마를 파일에 저장
+    schema.history.internal: io.debezium.relational.history.FileSchemaHistory
     schema.history.internal.file.filename: /etc/debezium/schema_history.dat
 
-    # snapshot
-    snapshot.mode: initial # initial : 이전에 저장된 오프셋이 없을 때 전체 스냅샷을 수행하고, 이후에는 로그 스트리밍으로 전환
+    snapshot.mode: initial
 
-    # DECIMAL(BIGDECIMAL) / NUMERIC 필드 처리 모드 설정
-    # 기본적으로 DECIMAL(BIGDECIMAL) 은 Byte 타입 + Base64 인코딩된 값으로 전달됨. 그래서 파싱이 복잡해짐
-    # string 모드로 설정하여 값이 문자열로 전달되게 할 수 있음.
     decimal:
       handling:
         mode: string
-

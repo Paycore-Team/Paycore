@@ -1,6 +1,9 @@
 version: '3.9'
 
 services:
+  # ================================
+  # Order Service
+  # ================================
   order-service:
     image: paycore-order:latest
     container_name: order-service
@@ -59,7 +62,7 @@ services:
     command:
       - postgres
       - -c
-      - wal_level=logical # logical decoding requires wal_level >= logical
+      - wal_level=logical
       - -c
       - max_wal_senders=10
       - -c
@@ -69,6 +72,9 @@ services:
     volumes:
       - order_pgdata:/var/lib/postgresql/data
 
+  # ================================
+  # Payment
+  # ================================
   payment-service:
     image: paycore-payment:latest
     container_name: payment-service
@@ -130,7 +136,7 @@ services:
     command:
       - postgres
       - -c
-      - wal_level=logical # logical decoding requires wal_level >= logical
+      - wal_level=logical
       - -c
       - max_wal_senders=10
       - -c
@@ -140,6 +146,9 @@ services:
     volumes:
       - payment_pgdata:/var/lib/postgresql/data
 
+  # ================================
+  # Notification
+  # ================================
   notification-service:
     image: paycore-notification:latest
     container_name: notification-service
@@ -173,6 +182,9 @@ services:
     volumes:
       - notification_pgdata:/var/lib/postgresql/data
 
+  # ================================
+  # Settlement
+  # ================================
   settlement-service:
     image: paycore-settlement:latest
     container_name: settlement-service
@@ -209,6 +221,9 @@ services:
     volumes:
       - settlement_pgdata:/var/lib/postgresql/data
 
+  # ================================
+  # Redis / RabbitMQ
+  # ================================
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -216,19 +231,46 @@ services:
     command: [ "redis-server", "--requirepass", "redispasswd" ]
     ports:
       - "6379:6379"
-    environment:
-      - REDIS_PASSWORD=redispasswd
 
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: rabbitmq
     restart: always
     ports:
-      - "5672:5672"       # AMQP
-      - "15672:15672"     # RabbitMQ Management UI (Insight)
+      - "5672:5672"
+      - "15672:15672"
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
+
+    # ================================
+  # Prometheus
+  # ================================
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+
+  # ================================
+  # Grafana
+  # ================================
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
+
 
 volumes:
   order_pgdata:
