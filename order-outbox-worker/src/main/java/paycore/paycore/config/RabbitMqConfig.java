@@ -40,16 +40,17 @@ public class RabbitMqConfig {
         connectionFactory.setPublisherConfirmType(CachingConnectionFactory.ConfirmType.CORRELATED); // publisher confirm 활성화
         connectionFactory.setPublisherReturns(true); // 메시지 라우팅 실패 시 브로커가 메시지를 반환하도록 설정
         connectionFactory.setExecutor(rabbitExecutor); // 콜백 수행할 스레드 풀 지정
+        connectionFactory.setChannelCacheSize(100);   // 캐싱할 채널 수
 
         return connectionFactory;
     }
 
     @Bean
     public RabbitTemplate rabbitTemplate(
-            CachingConnectionFactory connectionFactory,
+            CachingConnectionFactory cachingConnectionFactory,
             OutboxPersistenceUseCase outboxPersistenceUseCase
     ) {
-        RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
+        RabbitTemplate rabbitTemplate = new RabbitTemplate(cachingConnectionFactory);
         rabbitTemplate.setMessageConverter(new Jackson2JsonMessageConverter());
         rabbitTemplate.setConfirmCallback((correlationData, ack, cause) -> {
             if (ack) {
