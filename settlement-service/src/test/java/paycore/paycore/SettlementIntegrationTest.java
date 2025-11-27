@@ -60,10 +60,9 @@ class SettlementIntegrationTest {
         SettlementRequestDto request = new SettlementRequestDto(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
-                UUID.randomUUID(),
-                new BigDecimal("100.00"),
+                "apikey",
                 new BigDecimal("5.00"),
-                "merchant-account"
+                new BigDecimal("5.00")
         );
 
         SettlementEntity settlement = settlementService.execute(request);
@@ -84,21 +83,19 @@ class SettlementIntegrationTest {
                 SettlementEntity.builder()
                         .sagaId(UUID.randomUUID())
                         .paymentId(UUID.randomUUID())
-                        .orderId(UUID.randomUUID())
                         .amount(new BigDecimal("150.00"))
                         .fee(new BigDecimal("12.50"))
-                        .settlementAccount("merchant-account")
+                        .apiKey("apikey")
                         .merchantPayoutAmount(BigDecimal.ZERO)
                         .platformFeeAmount(BigDecimal.ZERO)
                         .status(SettlementStatus.PENDING)
-                        .build()
-        );
+                        .build());
 
         jobLauncherTestUtils.launchJob();
 
         SettlementEntity updated = settlementRepository.findById(pending.getId()).orElseThrow();
         assertThat(updated.getStatus()).isEqualTo(SettlementStatus.COMPLETED);
-        assertThat(updated.getMerchantPayoutAmount()).isEqualByComparingTo(new BigDecimal("137.50"));
+        assertThat(updated.getMerchantPayoutAmount()).isEqualByComparingTo(new BigDecimal("150.00"));
         assertThat(updated.getPlatformFeeAmount()).isEqualByComparingTo(new BigDecimal("12.50"));
 
         List<SettlementOutboxEntity> outboxEntries = settlementOutboxRepository.findAll();

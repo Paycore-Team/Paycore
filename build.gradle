@@ -33,17 +33,33 @@ subprojects {
     }
 }
 
-configure(subprojects.findAll {
-    it.name.endsWith('-service')}) {
+/* ============================================
+   📌 모든 -service 모듈은 Spring Boot 앱
+      → boot plugin + actuator + prometheus.yml
+   ============================================ */
+configure(subprojects.findAll { it.name.endsWith('-service') }) {
     apply plugin: 'org.springframework.boot'
 
     dependencies {
+        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+        implementation 'io.micrometer:micrometer-registry-prometheus'
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
     }
 }
 
-tasks.named('bootJar') { enabled = false }
-tasks.named('jar') { enabled = true }
+/* ============================================
+   📌 모든 -worker 모듈도 actuator/prometheus.yml 적용
+   ============================================ */
+configure(subprojects.findAll { it.name.endsWith('-worker') }) {
+    dependencies {
+        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+        implementation 'io.micrometer:micrometer-registry-prometheus'
+    }
+}
+
+/* ============================================
+   루트 bootJar 비활성화 (multi-module에서 필요)
+   ============================================ */
 
 gradle.projectsEvaluated {
     if (project == rootProject) {

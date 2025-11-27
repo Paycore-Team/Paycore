@@ -75,3 +75,16 @@ debezium:
       handling:
         mode: string
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: order-outbox-worker
+  prometheus:
+    enabled: true

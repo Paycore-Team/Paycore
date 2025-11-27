@@ -7,6 +7,7 @@ spring:
       enabled: false
     jdbc:
       initialize-schema: always
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5436/settlementdb}
     username: ${SPRING_DATASOURCE_USERNAME:settlementuser}
@@ -38,8 +39,24 @@ spring:
       simple:
         acknowledge-mode: auto
 
-
 logging:
   level:
     org.springframework: INFO
     org.hibernate.SQL: DEBUG
+
+# =====================================
+# 🔥 Actuator + Prometheus
+# =====================================
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: settlement-service
+  prometheus:
+    enabled: true
