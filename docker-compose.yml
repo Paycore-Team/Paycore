@@ -8,8 +8,8 @@ services:
     image: paycore-order:latest
     container_name: order-service
     build:
-      context: ./order-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: order-service/Dockerfile
     ports:
       - "8081:8081"
     depends_on:
@@ -31,8 +31,8 @@ services:
     image: order-outbox-worker:latest
     container_name: order-outbox-worker
     build:
-      context: ./order-outbox-worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: order-outbox-worker/Dockerfile
     ports:
       - "9081:9081"
     depends_on:
@@ -79,8 +79,8 @@ services:
     image: paycore-payment:latest
     container_name: payment-service
     build:
-      context: ./payment-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: payment-service/Dockerfile
     ports:
       - "8082:8082"
     depends_on:
@@ -105,8 +105,8 @@ services:
     image: payment-outbox-worker:latest
     container_name: payment-outbox-worker
     build:
-      context: ./payment-outbox-worker
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: payment-outbox-worker/Dockerfile
     ports:
       - "9082:9082"
     depends_on:
@@ -153,8 +153,8 @@ services:
     image: paycore-notification:latest
     container_name: notification-service
     build:
-      context: ./notification-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: notification-service/Dockerfile
     ports:
       - "8083:8083"
     depends_on:
@@ -189,8 +189,8 @@ services:
     image: paycore-settlement:latest
     container_name: settlement-service
     build:
-      context: ./settlement-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: settlement-service/Dockerfile
     ports:
       - "8084:8084"
     depends_on:
