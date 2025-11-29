@@ -25,9 +25,9 @@ public class RabbitMqConfig {
     @Bean
     public Executor rabbitExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(5); // 기본 스레드 수
-        executor.setMaxPoolSize(10); // 최대 스레드 수
-        executor.setQueueCapacity(100); // 대기 작업을 100 개까지 큐에 적재. 큐가 다 차면 스레드를 maxPoolSize 까지 증가시킴
+        executor.setCorePoolSize(50); // 기본 스레드 수
+        executor.setMaxPoolSize(100); // 최대 스레드 수
+        executor.setQueueCapacity(10000); // 대기 작업을 10000 개까지 큐에 적재. 큐가 다 차면 스레드를 maxPoolSize 까지 증가시킴
         executor.setThreadNamePrefix("rabbit-callback-");
         executor.initialize();
 
