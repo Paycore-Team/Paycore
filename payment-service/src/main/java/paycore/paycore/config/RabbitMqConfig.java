@@ -21,6 +21,10 @@ public class RabbitMqConfig {
     public static final String SETTLEMENT_SUCCESS_ROUTING_KEY = "settlement.success";
     public static final String SETTLEMENT_FAILURE_ROUTING_KEY = "settlement.failure";
 
+    private static final int DEFAULT_PREFETCH_COUNT = 1000;
+    private static final int DEFAULT_CONCURRENT_CONSUMERS = 1000;
+    private static final int DEFAULT_MAX_CONCURRENT_CONSUMERS = 1000;
+
     @Bean
     public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
         return new Jackson2JsonMessageConverter();
@@ -34,8 +38,9 @@ public class RabbitMqConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jackson2JsonMessageConverter);
-        factory.setPrefetchCount(10);
-        factory.setMaxConcurrentConsumers(10);
+        factory.setPrefetchCount(DEFAULT_PREFETCH_COUNT);
+        factory.setConcurrentConsumers(DEFAULT_CONCURRENT_CONSUMERS);
+        factory.setMaxConcurrentConsumers(DEFAULT_MAX_CONCURRENT_CONSUMERS);
 
         return factory;
     }

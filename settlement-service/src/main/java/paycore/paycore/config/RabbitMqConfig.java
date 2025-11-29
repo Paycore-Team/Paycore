@@ -18,6 +18,10 @@ public class RabbitMqConfig {
     public static final String PAYMENT_SETTLEMENT_QUEUE = "payment-settlement.queue";
     public static final String PAYMENT_SUCCESS_ROUTING_KEY = "payment.success";
 
+    private static final int DEFAULT_PREFETCH_COUNT = 1000;
+    private static final int DEFAULT_CONCURRENT_CONSUMERS = 1000;
+    private static final int DEFAULT_MAX_CONCURRENT_CONSUMERS = 1000;
+
     @Bean
     public DirectExchange paymentExchange() {
         return new DirectExchange(PAYMENT_EXCHANGE);
@@ -48,6 +52,10 @@ public class RabbitMqConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         factory.setConnectionFactory(connectionFactory);
         factory.setMessageConverter(jackson2JsonMessageConverter);
+        factory.setPrefetchCount(DEFAULT_PREFETCH_COUNT);
+        factory.setConcurrentConsumers(DEFAULT_CONCURRENT_CONSUMERS);
+        factory.setMaxConcurrentConsumers(DEFAULT_MAX_CONCURRENT_CONSUMERS);
+
         return factory;
     }
 

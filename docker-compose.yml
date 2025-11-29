@@ -238,9 +238,18 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
 
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit vm_memory_high_watermark 0.4" # 메모리 사용량이 전체 메모리 40% 넘으면 메시지 수신 제한
+      RABBITMQ_DISK_FREE_LIMIT: "10MB" # 디스크 여유 공간이 10MB 미만이면 메시지 수신 중단
+      RABBITMQ_MANAGEMENT_STATS_INTERVAL: "60000"  # 60초마다 갱신
+    ulimits:
+      nofile: # RabbitMQ 프로세스가 동시에 열 수 있는 파일 핸들(소켓 포함)의 최대값 설정
+        soft: 200000
+        hard: 200000
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq/mnesia
     # ================================
   # Prometheus
   # ================================
@@ -275,3 +284,4 @@ volumes:
   payment_pgdata:
   notification_pgdata:
   settlement_pgdata:
+  rabbitmq-data:
