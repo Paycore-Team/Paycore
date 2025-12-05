@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import paycore.paycore.application.usecase.FindOrderUseCase;
 import paycore.paycore.application.usecase.PlaceOrderUseCase;
+import paycore.paycore.domain.OrderStatus;
 import paycore.paycore.dto.OrderRequestDto;
 import paycore.paycore.entity.OrderEntity;
 
@@ -17,7 +18,7 @@ public class OrderController {
     private final FindOrderUseCase findOrderUseCase;
 
     @PostMapping("")
-    public ResponseEntity<OrderEntity> createOrder(
+    public ResponseEntity<OrderStatus> createOrder(
             @RequestBody OrderRequestDto dto
     ) {
         return ResponseEntity.ok(placeOrderUseCase.execute(dto));

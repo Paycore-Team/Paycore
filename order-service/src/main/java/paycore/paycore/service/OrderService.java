@@ -27,12 +27,12 @@ public class OrderService implements PlaceOrderUseCase {
 
     @Override
     @Transactional
-    public OrderEntity execute(OrderRequestDto dto) {
+    public OrderStatus execute(OrderRequestDto dto) {
         OrderEntity existOrder = orderRepository.findByIdempotencyKey(dto.idempotencyKey());
         if (existOrder != null) {
             log.info("Order already exists {}", existOrder);
 
-            return existOrder;
+            return existOrder.getStatus();
         }
 
         OrderEntity order = OrderEntity.builder()
@@ -49,7 +49,7 @@ public class OrderService implements PlaceOrderUseCase {
         orderRepository.save(order);
 
         createOutboxEvent(order, EventType.SUCCESS.name());
-        return order;
+        return order.getStatus();
     }
 
     private void createOutboxEvent(OrderEntity order, String eventType) {
