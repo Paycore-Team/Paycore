@@ -24,6 +24,7 @@ public class OrderEntity {
 
     private UUID sagaId;
 
+    @Column(unique = true)
     private UUID idempotencyKey; // 일단 Entity 에 저장
 
     private String apiKey;

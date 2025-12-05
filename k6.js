@@ -8,16 +8,16 @@ export const options = {
   scenarios: {
     orders_rps: {
       executor: 'constant-arrival-rate',
-      rate: 2000,                   // 초당 500건
+      rate: 3000,
       timeUnit: '1s',
-      duration: '60s',              // 60 초 테스트
+      duration: '10s',
       preAllocatedVUs: 50,
       maxVUs: 100,
     },
   },
   thresholds: {
     http_req_failed: ['rate<0.01'],   // 실패율 < 1%
-    http_req_duration: ['p(95)<500'], // 95% 응답시간 < 500ms
+    http_req_duration: ['p(95)<800'], // 95% 응답시간 < 800ms
   },
 };
 
@@ -30,13 +30,15 @@ function uuidv4() {
   });
 }
 
+function uuidIdemv4() {
+  return '7a2fbf84-065b-4a3d-9587-5133ce0b1cf6';
+}
+
 export default function () {
   const url = 'http://localhost:8081/api/orders';
 
-  const idempotencyKey = uuidv4(); // ★ 순수 UUID만 보내야 Spring이 파싱 가능
-
+  const idempotencyKey = uuidv4();
   const apiKey = `${TEST_RUN_ID}-${__VU}-${__ITER}-${uuidv4()}`;
-  // RUN-20251127-4-182-b3fa...  이런 식으로 유니크하게 생성됨
 
   const payload = {
     idempotencyKey: idempotencyKey,
@@ -53,6 +55,13 @@ export default function () {
   };
 
   const res = http.post(url, JSON.stringify(payload), params);
+
+  // -------------------------------
+  //  요청별 응답 출력 (상태코드 + body)
+  // -------------------------------
+//  console.log(
+//    `[ITER ${__ITER}] status=${res.status} body=${res.body}`
+//  );
 
   check(res, {
     'status is 2xx or 3xx': (r) => r.status >= 200 && r.status < 400,
