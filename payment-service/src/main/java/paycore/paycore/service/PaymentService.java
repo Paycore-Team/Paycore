@@ -2,6 +2,7 @@ package paycore.paycore.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import paycore.paycore.common.UseCase;
 import paycore.paycore.config.TaskSchedulerManager;
@@ -35,6 +36,7 @@ public class PaymentService implements PaymentUseCase {
 
     private static final String retUrl = "retUrl";
     private static final String retCancelUrl = "retCancelUrl";
+    private final RetryTemplate retryTemplate;
 
     @Override
     public Void execute(PaymentServiceRequest input) {
@@ -75,28 +77,38 @@ public class PaymentService implements PaymentUseCase {
                     input.amount(),
                     input.amountTaxFree()
             );
-            MockServiceResponse result = mockUseCase.execute(
-                    newMockServiceRequest
+            MockServiceResponse result = retryTemplate.execute(
+                    context -> mockUseCase.execute(newMockServiceRequest),
+                    context -> {
+                        // 재시도 후에도 응답 코드가 500 이면 Outbox 에 실패 내역을 저장해 결제 실패 이벤트를 발행한다.
+                        // 이후 예외를 발생시켜 RabbitMQ 재처리를 유도한다.
+                        log.warn("After {} retries, the external server returned an error: {}", context.getRetryCount(), context.getLastThrowable().getMessage());
+
+                        paymentPersistenceUseCase.execute(
+                                new PaymentPersistenceServiceRequest(
+                                        input.sagaId(),
+                                        500,
+                                        input.apiKey(),
+                                        input.amount()
+                                )
+                        );
+
+                        throw (RuntimeException) context.getLastThrowable();
+                    }
             );
-
-            if (result.httpResponse().statusCode() >= 500) {
-                log.warn("External server returned {}", result.httpResponse().statusCode());
-
-                throw new ExternalServerException();
-            }
 
             paymentPersistenceUseCase.execute(
                     new PaymentPersistenceServiceRequest(
                             input.sagaId(),
-                            result.httpResponse().statusCode(),
-                            result.httpResponse().body(),
+                            result.data().statusCode(),
+                            input.apiKey(),
                             input.amount()
                     )
             );
 
             IdempotencyKeyData newIdempotencyKeyData = new IdempotencyKeyData(
-                    result.httpResponse().statusCode(),
-                    result.httpResponse().body()
+                    result.data().statusCode(),
+                    result.data().body()
             );
             IdempotencyResultResponse response = idempotencyKeyRepository.saveResultAndReleaseLock(
                     input.sagaId(),
@@ -135,12 +147,6 @@ public class PaymentService implements PaymentUseCase {
     private class RecordAlreadyLeased extends UseCase.Exception {
         public RecordAlreadyLeased() {
             super("Resource is already leased by another process");
-        }
-    }
-
-    private class ExternalServerException extends UseCase.Exception {
-        public ExternalServerException() {
-            super("External server returned 5xx");
         }
     }
 }

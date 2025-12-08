@@ -1,6 +1,7 @@
 package paycore.paycore.service;
 
 import org.springframework.stereotype.Service;
+import paycore.paycore.common.UseCase;
 import paycore.paycore.usecase.MockUseCase;
 import paycore.paycore.usecase.model.MockServiceRequest;
 import paycore.paycore.usecase.model.MockServiceResponse;
@@ -60,6 +61,16 @@ public class MockService implements MockUseCase {
             }
         };
 
+        if (httpResponse.statusCode() == 500) {
+            throw new ExternalServerException();
+        }
+
         return new MockServiceResponse(httpResponse);
+    }
+
+    private class ExternalServerException extends UseCase.Exception {
+        public ExternalServerException() {
+            super("External server returned 5xx");
+        }
     }
 }
