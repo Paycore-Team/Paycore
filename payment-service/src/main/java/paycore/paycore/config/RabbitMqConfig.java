@@ -1,9 +1,6 @@
 package paycore.paycore.config;
 
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.DirectExchange;
-import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.*;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
@@ -15,6 +12,8 @@ public class RabbitMqConfig {
     public static final String ORDER_EXCHANGE = "order.exchange";
     public static final String ORDER_PAYMENT_QUEUE = "order-payment.queue";
     public static final String ORDER_SUCCESS_ROUTING_KEY = "order.success";
+    public static final String ORDER_PAYMENT_DEAD_LETTER_QUEUE = "order-payment.dead-letter.queue";
+    public static final String ORDER_PAYMENT_DEAD_LETTER_ROUTING_KEY = "order-payment.dead-letter";
 
     public static final String SETTLEMENT_EXCHANGE = "settlement.exchange";
     public static final String SETTLEMENT_PAYMENT_QUEUE = "settlement-payment.queue";
@@ -41,6 +40,7 @@ public class RabbitMqConfig {
         factory.setPrefetchCount(DEFAULT_PREFETCH_COUNT);
         factory.setConcurrentConsumers(DEFAULT_CONCURRENT_CONSUMERS);
         factory.setMaxConcurrentConsumers(DEFAULT_MAX_CONCURRENT_CONSUMERS);
+        factory.setDefaultRequeueRejected(false); // 예외 발생 시 requeue하지 않고 nack 처리하여 DLQ로 전달되도록 설정
 
         return factory;
     }
@@ -50,9 +50,26 @@ public class RabbitMqConfig {
         return new DirectExchange(ORDER_EXCHANGE);
     }
 
+    // DLQ 정의
+    @Bean
+    public Queue orderPaymentDeadLetterQueue() {
+        return new Queue(ORDER_PAYMENT_DEAD_LETTER_QUEUE);
+    }
+
+    @Bean
+    public Binding orderPaymentFailureBinding() {
+        return BindingBuilder.bind(orderPaymentDeadLetterQueue())
+                .to(orderExchange())
+                .with(ORDER_PAYMENT_DEAD_LETTER_ROUTING_KEY);
+    }
+
     @Bean
     public Queue orderPaymentQueue() {
-        return new Queue(ORDER_PAYMENT_QUEUE);
+        return QueueBuilder.durable(ORDER_PAYMENT_QUEUE)
+                // DLQ 설정
+                .withArgument("x-dead-letter-exchange", ORDER_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", ORDER_PAYMENT_DEAD_LETTER_ROUTING_KEY)
+                .build();
     }
 
     @Bean
