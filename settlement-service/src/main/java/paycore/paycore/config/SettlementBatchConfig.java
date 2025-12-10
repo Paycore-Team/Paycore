@@ -13,7 +13,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
-@EnableBatchProcessing
 @RequiredArgsConstructor
 public class SettlementBatchConfig {
 

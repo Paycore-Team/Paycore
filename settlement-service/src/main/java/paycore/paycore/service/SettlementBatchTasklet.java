@@ -43,8 +43,10 @@ public class SettlementBatchTasklet implements Tasklet {
         log.info("Processing {} pending settlement(s)", pendings.size());
 
         pendings.forEach(settlement -> {
-            BigDecimal platformFee = settlement.getFee();
-            BigDecimal merchantPayout = settlement.getAmount().subtract(platformFee);
+            BigDecimal amount = settlement.getAmount() == null ? BigDecimal.ZERO : settlement.getAmount();
+            BigDecimal platformFee = settlement.getFee() == null ? BigDecimal.ZERO : settlement.getFee();
+
+            BigDecimal merchantPayout = amount.subtract(platformFee);
             if (merchantPayout.signum() < 0) {
                 merchantPayout = BigDecimal.ZERO;
             }
@@ -63,6 +65,7 @@ public class SettlementBatchTasklet implements Tasklet {
             String payload = objectMapper.writeValueAsString(settlement);
 
             SettlementOutboxEntity event = SettlementOutboxEntity.builder()
+                    .settlementId(settlement.getId())
                     .sagaId(settlement.getSagaId())
                     .eventType(eventType)
                     .status(OutboxStatus.PENDING)
