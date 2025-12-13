@@ -1,6 +1,6 @@
 @startuml
-skinparam linetype ortho
 package "Payment Service" {
+skinparam linetype ortho
 skinparam ranksep 80
 skinparam nodesep 150
 
