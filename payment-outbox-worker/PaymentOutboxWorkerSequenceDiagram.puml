@@ -1,0 +1,52 @@
+@startuml
+autonumber
+skinparam linetype ortho
+
+database "PostgreSQL DB" as SourceDB
+participant "Debezium (Connector)" as Debezium
+
+participant "DebeziumMessageListener" as Listener
+participant "WorkerService" as WorkerService
+participant "RabbitMqPublisher" as Publisher
+participant "RabbitTemplate" as RabbitTemplate
+participant "RabbitMQ" as RabbitMQ
+participant "PaymentPersistenceService" as PersistenceService
+database "PaymentOutboxRepository" as OutboxRepo
+
+== Debezium Event Consume ==
+Debezium -> SourceDB : read WAL
+note right of SourceDB
+WAL (Write-Ahead Log)
+PostgreSQL transaction log
+used for CDC
+end note
+
+Debezium -> Listener : change event
+
+Listener -> Listener : parse payload\nmap PaymentOutboxRecord
+
+alt status == SENT
+  Listener -> Listener : ignore
+else status != SENT
+  Listener -> WorkerService : execute(workerRequest)
+
+  == Publish (sync) ==
+  WorkerService -> Publisher : publish(workerRequest)
+  Publisher -> RabbitTemplate : convertAndSend(...)
+
+  RabbitTemplate -> RabbitMQ : publish(message)
+end
+
+== Publisher Confirm (async) ==
+
+RabbitMQ ->> RabbitTemplate : ack(correlationData)
+
+RabbitTemplate -> PersistenceService : updateStatus(correlationData.id)
+
+PersistenceService -> OutboxRepo : findBySagaId(id)
+OutboxRepo --> PersistenceService : PaymentOutboxEntity
+
+PersistenceService -> OutboxRepo : save(status = SENT)
+OutboxRepo --> PersistenceService : saved entity
+
+@enduml
