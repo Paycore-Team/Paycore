@@ -12,13 +12,13 @@ import paycore.paycore.domain.IdempotencyResultResponse;
 import paycore.paycore.domain.IdempotencyStatus;
 import paycore.paycore.entity.IdempotencyKeyData;
 import paycore.paycore.repository.IdempotencyKeyRepository;
-import paycore.paycore.usecase.MockUseCase;
 import paycore.paycore.usecase.PaymentPersistenceUseCase;
 import paycore.paycore.usecase.PaymentUseCase;
 import paycore.paycore.usecase.model.MockServiceRequest;
 import paycore.paycore.usecase.model.MockServiceResponse;
 import paycore.paycore.usecase.model.PaymentPersistenceServiceRequest;
 import paycore.paycore.usecase.model.PaymentServiceRequest;
+import paycore.paycore.usecase.port.PaymentGatewayPort;
 
 import java.time.Duration;
 import java.util.UUID;
@@ -28,14 +28,13 @@ import java.util.concurrent.ScheduledFuture;
 @RequiredArgsConstructor
 @Service
 public class PaymentService implements PaymentUseCase {
-    private final MockUseCase mockUseCase;
+    private static final String retUrl = "retUrl";
+    private static final String retCancelUrl = "retCancelUrl";
+    private final PaymentGatewayPort paymentGatewayPort;
     private final PaymentPersistenceUseCase paymentPersistenceUseCase;
     private final IdempotencyKeyRepository idempotencyKeyRepository;
     private final TaskSchedulerManager taskSchedulerManager;
     private final HeartBeatService heartBeatService;
-
-    private static final String retUrl = "retUrl";
-    private static final String retCancelUrl = "retCancelUrl";
     private final RetryTemplate retryTemplate;
 
     @Override
@@ -78,7 +77,7 @@ public class PaymentService implements PaymentUseCase {
                     input.amountTaxFree()
             );
             MockServiceResponse result = retryTemplate.execute(
-                    context -> mockUseCase.execute(newMockServiceRequest),
+                    context -> paymentGatewayPort.pay(newMockServiceRequest),
                     context -> {
                         // 재시도 후에도 응답 코드가 500 이면 Outbox 에 실패 내역을 저장해 결제 실패 이벤트를 발행한다.
                         // 이후 예외를 발생시켜 RabbitMQ 재처리를 유도한다.
