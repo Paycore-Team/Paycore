@@ -1,8 +1,6 @@
-package paycore.paycore.service;
+package paycore.paycore.service.adapter;
 
 import org.springframework.stereotype.Service;
-import paycore.paycore.common.UseCase;
-import paycore.paycore.usecase.MockUseCase;
 import paycore.paycore.usecase.model.MockServiceRequest;
 import paycore.paycore.usecase.model.MockServiceResponse;
 
@@ -16,8 +14,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
-public class MockService implements MockUseCase {
-    @Override
+public class MockService {
     public MockServiceResponse execute(MockServiceRequest input) {
         HttpResponse<String> httpResponse = new HttpResponse<>() {
             @Override
@@ -68,7 +65,7 @@ public class MockService implements MockUseCase {
         return new MockServiceResponse(httpResponse);
     }
 
-    private class ExternalServerException extends UseCase.Exception {
+    private class ExternalServerException extends RuntimeException {
         public ExternalServerException() {
             super("External server returned 5xx");
         }
