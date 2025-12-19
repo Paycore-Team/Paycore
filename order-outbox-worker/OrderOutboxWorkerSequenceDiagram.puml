@@ -2,20 +2,21 @@
 autonumber
 skinparam linetype ortho
 
-database "PostgreSQL DB" as SourceDB
-participant "Debezium (Connector)" as Debezium
+database "OrderOutboxRepository" as OutboxRepo
 
+participant "Debezium (Connector)" as Debezium
 participant "DebeziumMessageListener" as Listener
 participant "WorkerService" as WorkerService
+
 participant "RabbitMqPublisher" as Publisher
 participant "RabbitTemplate" as RabbitTemplate
 participant "RabbitMQ" as RabbitMQ
+
 participant "OrderPersistenceService" as PersistenceService
-database "OrderOutboxRepository" as OutboxRepo
 
 == Debezium Event Consume ==
-Debezium -> SourceDB : read WAL
-note right of SourceDB
+Debezium -> OutboxRepo : read WAL
+note right of OutboxRepo
 WAL (Write-Ahead Log)
 PostgreSQL transaction log
 used for CDC
@@ -33,12 +34,10 @@ else status != SENT
   == Publish (sync) ==
   WorkerService -> Publisher : publish(workerRequest)
   Publisher -> RabbitTemplate : convertAndSend(...)
-
   RabbitTemplate -> RabbitMQ : publish(message)
 end
 
 == Publisher Confirm (async) ==
-
 RabbitMQ ->> RabbitTemplate : ack(correlationData)
 
 RabbitTemplate -> PersistenceService : updateStatus(correlationData.id)
