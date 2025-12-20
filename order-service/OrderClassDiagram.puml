@@ -1,129 +1,128 @@
 @startuml
 skinparam linetype ortho
-package "Order Service" {
-skinparam ranksep 120
-skinparam nodesep 150
+skinparam packageStyle rectangle
+top to bottom direction
 
-GetOrderService -[hidden]l-> OrderRequest
-GetOrderService -[hidden]d-> JpaRepository
-GetOrderRequest -[hidden]r-> OrderRequest
-
-  class Order {
-    +orderId: Long
-    +idempotencyKey: UUID
-    +apiKey: String
-    +productDesc: String
-    +amount: BigDecimal
-    +amountTaxFree: Long
-    +status: OrderStatus
-    +createdAt: LocalDateTime
-    +updateStatus(status: OrderStatus): void
-  }
-
-  enum OrderStatus {
-    PENDING
-    PAID
-    CANCELLED
-  }
-
-  class OrderOutbox {
-      +sagaId: UUID
-      +orderId: Long
-      +eventType: EventType
-      +status: OutboxStatus
-      +apiKey: String
-      +productDesc: String
-      +amount: BigDecimal
-      +amountTaxFree: Long
-      +createdAt: LocalDateTime
-  }
-
-  enum OutboxStatus {
-      PENDING
-      SENT
-  }
-
-  enum EventType {
-      SUCCESS
-      FAILURE
-  }
-
-  class OrderRequest {
-      +idempotencyKey: UUID
-      +apiKey: String
-      +productDesc: String
-      +amount: BigDecimal
-      +amountTaxFree: Long
-  }
-
-  class GetOrderRequest {
-    +orderId: Long
-  }
-
-  class GetOrderResponse {
-    +order: Order
-  }
-
+' ======================
+' Presentation
+' ======================
+package "Presentation Layer" {
   class OrderController {
-    -orderService: OrderService
-    -getOrderService: GetOrderService
-    +createOrder(input: OrderRequest): Void
+    +orderUseCase: OrderUseCase
+    +getOrderUseCase: GetOrderUseCase
+  ---
+    +createOrder(input: OrderRequest): void
     +getOrder(input: GetOrderRequest): GetOrderResponse
   }
 
+  package "DTO" {
+    class OrderRequest
+    class GetOrderRequest
+    class GetOrderResponse
+  }
+}
+
+' ======================
+' Application – UseCase
+' ======================
+package "Application Layer\n<<UseCase>>" {
   interface UseCase<I, O> {
-      +execute(input: I): O
+    +execute(input: I): O
   }
 
   interface OrderUseCase {
-      +execute(input: OrderRequest): Void
+    +execute(input: OrderRequest): void
   }
-
   interface GetOrderUseCase {
-      +execute(input: GetOrderRequest): GetOrderResponse
+     +execute(input: GetOrderRequest): GetOrderResponse
   }
-
-  class OrderService {
-    -orderRepository: OrderRepository
-    -orderOutboxRepository: OrderOutboxRepository
-    +execute(input: OrderRequest): Void
-  }
-
-  class GetOrderService {
-    -orderRepository: OrderRepository
-    +execute(input: GetOrderRequest): GetOrderResponse
-  }
-
-  interface OrderRepository {
-    + save(order: Order)
-    + findById(orderId: Long): Optional<Order>
-  }
-
-  interface OrderOutboxRepository {
-    + save(OrderOutbox event)
-    + findUnsentEvents(): List<OrderOutbox>
-    + markAsSent(orderId: Long): Void
-  }
-
-  JpaRepository <|-- OrderRepository
-  JpaRepository <|-- OrderOutboxRepository
-
-  Order "1" -- "1" OrderOutbox
-  Order --> OrderStatus
-  OrderOutbox --> OutboxStatus
-  OrderOutbox --> EventType
-
-  OrderController --> OrderService
-  OrderController --> GetOrderService
 
   OrderUseCase -up-|> UseCase
   GetOrderUseCase -up-|> UseCase
+}
+
+' ======================
+' Application – Service (비즈니스 중심)
+' ======================
+package "Application Layer\n<<Service>>" {
+
+  class OrderService {
+    + orderOutboxRepository: OrderOutboxRepository
+    + orderRepository: OrderRepository
+    --
+    +execute(input: OrderRequest): void
+  }
+
+  class GetOrderService {
+    + orderRepository: OrderRepository
+    --
+    +execute(input: GetOrderRequest): GetOrderResponse
+  }
 
   OrderUseCase <|.. OrderService
   GetOrderUseCase <|.. GetOrderService
-
-  OrderService --> OrderRepository
-  OrderService --> OrderOutboxRepository
-  GetOrderService --> OrderRepository
 }
+
+' ======================
+' Domain
+' ======================
+package "Domain Layer\n<<Order Aggregate>>" {
+
+package "Domain" {
+    class Order {
+        +orderId: Long
+        +idempotencyKey: UUID
+        +status: OrderStatus
+        +updateStatus(status: OrderStatus)
+      }
+
+      class OrderOutbox {
+        +sagaId: UUID
+        +eventType: EventType
+        +status: OutboxStatus
+        +createdAt: LocalDateTime
+      }
+
+      enum OrderStatus {
+      PENDING PAID CANCELLED
+      }
+      enum OutboxStatus {
+      PENDING SENT
+      }
+      enum EventType {
+      SUCCESS FAILURE
+      }
+}
+
+' ======================
+' DTO
+' ======================
+}
+
+' ======================
+' Infrastructure
+' ======================
+package "Infrastructure Layer" {
+  interface JpaRepository
+  interface OrderRepository
+  interface OrderOutboxRepository
+  JpaRepository <-up- OrderRepository
+  JpaRepository <-up- OrderOutboxRepository
+}
+
+' ======================
+' Dependencies (위 → 아래)
+' ======================
+OrderController --* GetOrderUseCase
+OrderController --* OrderUseCase
+OrderService --* OrderRepository
+OrderService --* OrderOutboxRepository
+GetOrderService --* OrderRepository
+
+' ======================
+' Layout control (layer ordering)
+' ======================
+"Presentation Layer" -[hidden]-> "Application Layer\n<<UseCase>>"
+"Application Layer\n<<UseCase>>" -[hidden]-> "Application Layer\n<<Service>>"
+"Application Layer\n<<Service>>" -[hidden]-> "Domain Layer\n<<Order Aggregate>>"
 @enduml

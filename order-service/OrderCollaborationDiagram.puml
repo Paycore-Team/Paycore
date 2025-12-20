@@ -2,52 +2,67 @@
 skinparam linetype ortho
 top to bottom direction
 
-skinparam ranksep 100
-skinparam nodesep 280
+skinparam ranksep 170
+skinparam nodesep 260
 
+' ======================
 ' 객체(노드) 정의
+' ======================
 object User
-object OrderService
+object OrderController
+object "PlaceOrderUseCase\n(Port)" as PlaceOrderUseCase
+object "OrderService\n(UseCase Impl)" as OrderService
 object "OrderEntity\n(Order)" as OrderEntity
 object "OrderOutboxEntity\n(Outbox)" as OrderOutbox
-object OrderOutboxWorker
-object RabbitMQ
+object "OrderOutboxWorker" as OrderOutboxWorker
 
-User -[hidden]r-> OrderService
+' ======================
+' 레이아웃 보정 (hidden)
+' ======================
+User -[hidden]d-> OrderController
+OrderController -[hidden]d-> PlaceOrderUseCase
+PlaceOrderUseCase -[hidden]d-> OrderService
 OrderService -[hidden]d-> OrderEntity
 OrderService -[hidden]r-> OrderOutbox
 OrderOutbox -[hidden]d-> OrderOutboxWorker
-OrderOutboxWorker -[hidden]d-> RabbitMQ
 
-' 메시지(번호 포함)
-User -down-> OrderService      : 1. 주문 요청
+' ======================
+' 메시지 흐름
+' ======================
 
-' ---- 추가 시작 ----
-OrderService -down-> OrderEntity : 1.1. idempotency key 존재 여부 조회
-OrderEntity -down-> OrderService : 1.2. 기존 레코드 존재 시 결과 반환
-OrderService -down-> User        : 1.3. 기존 주문 결과 반환
+User -down-> OrderController: 1. POST /api/orders (OrderRequestDto)
 
-note top of OrderService
-1.1 조회 결과가 있는 경우 -> 1.2, 1.3 수행 후 종료
-1.1 조회 결과가 없는 경우 -> 2 이후 신규 주문 처리 수행
+OrderController -down-> PlaceOrderUseCase: 1.1 execute(dto)
+
+PlaceOrderUseCase -down-> OrderService: 1.2 execute(dto)
+
+' ---- Idempotency Check ----
+OrderService -down-> OrderEntity: 1.3 findByIdempotencyKey(dto.key)
+
+OrderEntity -down-> OrderService: 1.4 existing order or null
+
+OrderService -up-> OrderController: 1.5 return existing OrderStatus (if exists)
+
+note right of OrderService
+1.3 결과가 존재하면
+→ 신규 주문 처리 없이 바로 반환
 end note
-' ---- 추가 끝 ----
 
-' ---- 트랜잭션 묶음 표시 ----
-OrderService -down-> OrderEntity : 2. 주문 데이터 저장(PENDING)
-OrderService -down-> OrderOutbox : 2.1. Outbox 레코드 저장\n(event = PaymentRequested)
+' ---- 신규 주문 처리 ----
+OrderService -down-> OrderEntity: 2. save Order (status=PENDING)
 
-note top of OrderService
-2와 2.1은 동일 트랜잭션에서 수행됨
+OrderService -down-> OrderOutbox: 2.1 save Outbox\n(PaymentRequestedEvent)
+
+note right of OrderService
+2 와 2.1 은
+동일 트랜잭션(@Transactional)
 end note
-' ---- 추가 끝 ----
 
-OrderOutboxWorker -down-> OrderOutbox : 3. 처리되지 않은 Outbox 조회
-OrderOutbox -down-> OrderOutboxWorker : 4. Outbox 반환
+OrderService -up-> OrderController: 2.2 return OrderStatus
 
-OrderOutboxWorker -down-> RabbitMQ : 5. PaymentRequestedEvent 발행
-RabbitMQ -down-> OrderOutboxWorker : 6. ACK
+' ---- Outbox Worker 처리 ----
+OrderOutboxWorker -down-> OrderOutbox: 3. PENDING 상태 Outbox 조회
 
-OrderOutboxWorker -down-> OrderOutbox : 7. Outbox 상태 = COMPLETED
+OrderOutbox -down-> OrderOutboxWorker: 4. Outbox 이벤트 반환
 
 @enduml

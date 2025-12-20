@@ -2,12 +2,20 @@
 skinparam linetype ortho
 title Clean Architecture Service Structure
 
-' 공통 UseCase 인터페이스
+package "Presentation Layer" {
+class Controller {
+  -ExampleUseCase: exampleUseCase
+  ---
+  +start(input: ExampleRequest): ExampleResult
+}
+}
+
+package "Application Layer" {
+
 interface UseCase<I, O> {
   +execute(input: I): O
 }
 
-' 서비스별 UseCase 인터페이스
 interface ExampleUseCase {
   +execute(input: ExampleRequest): ExampleResult
 }
@@ -17,6 +25,10 @@ class ExampleService {
   -repository: ExampleRepository
   +execute(input: ExampleRequest): ExampleResult
 }
+}
+
+package "Domain Layer" {
+
 
 ' 도메인 엔티티(예시)
 class ExampleEntity {
@@ -24,9 +36,10 @@ class ExampleEntity {
   ..domain fields..
 }
 
-' 입력/출력 DTO
-class ExampleRequest
-class ExampleResult
+class ExampleRequest(DTO)
+class ExampleResult(DTO)
+}
+package "Infrastructure Layer" {
 
 ' 스프링 JPA 공통 레포지토리
 interface JpaRepository {
@@ -37,12 +50,11 @@ interface ExampleRepository {
   +save(aggregate: ExampleEntity)
   +findById(id: Long): Optional<ExampleEntity>
 }
-
+}
 ' 관계 정의
 UseCase <|-- ExampleUseCase
-ExampleUseCase <|.. ExampleService
+ExampleUseCase <|-- ExampleService
 
-ExampleService --> ExampleRepository
 JpaRepository <|-- ExampleRepository
 
 @enduml

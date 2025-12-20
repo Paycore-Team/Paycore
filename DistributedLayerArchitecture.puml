@@ -1,0 +1,96 @@
+@startuml
+skinparam linetype ortho
+skinparam packageStyle rectangle
+top to bottom direction
+
+skinparam ranksep 200
+skinparam nodesep 120
+skinparam ArrowFontSize 10
+
+title PayCore Distributed Layered Architecture
+
+' =========================
+' Application Layer
+' =========================
+package "Application Layer" {
+
+  package "Order Domain" {
+    component "Order Service"
+    component "Order Outbox Worker"
+  }
+
+  package "Payment Domain" {
+    component "Payment Service"
+    component "Payment Outbox Worker"
+  }
+
+  package "Settlement Domain" {
+    component "Settlement Service"
+    component "Settlement Outbox Worker"
+  }
+}
+
+' =========================
+' Platform Layer
+' =========================
+package "Platform Layer" {
+
+  component "RabbitMQ\n(Event Broker)"
+  component "Redis\n(Cache / Idempotency)"
+  component "Spring Batch\n(Settlement Job)"
+}
+
+' =========================
+' Infrastructure Layer
+' =========================
+package "Infrastructure Layer" {
+
+  database "Order DB\n(PostgreSQL)"
+  database "Order Outbox DB\n(PostgreSQL)"
+
+  database "Payment DB\n(PostgreSQL)"
+  database "Payment Outbox DB\n(PostgreSQL)"
+
+  database "Settlement DB\n(PostgreSQL)"
+  database "Settlement Outbox DB\n(PostgreSQL)"
+}
+
+' =========================
+' Observability (Cross-cutting)
+' =========================
+package "Monitoring" {
+  component "Prometheus"
+  component "Grafana"
+}
+
+' =========================
+' Layer Connections
+' =========================
+"Order Service" --> "Order DB\n(PostgreSQL)"
+"Order Service" --> "Redis\n(Cache / Idempotency)"
+"Order Outbox Worker" --> "Order Outbox DB\n(PostgreSQL)"
+
+"Payment Service" --> "Payment DB\n(PostgreSQL)"
+"Payment Outbox Worker" --> "Payment Outbox DB\n(PostgreSQL)"
+
+"Settlement Service" --> "Settlement DB\n(PostgreSQL)"
+"Settlement Outbox Worker" --> "Settlement Outbox DB\n(PostgreSQL)"
+
+' Event-driven communication
+"Order Domain" --> "RabbitMQ\n(Event Broker)"
+
+"Payment Domain" --> "RabbitMQ\n(Event Broker)"
+
+"Settlement Domain" --> "RabbitMQ\n(Event Broker)"
+
+' Cache / Idempotency
+"Payment Service" --> "Redis\n(Cache / Idempotency)"
+
+' Batch processing
+"Spring Batch\n(Settlement Job)" --> "Settlement DB\n(PostgreSQL)"
+
+' Observability
+"Prometheus" --> "Application Layer"
+
+
+@enduml

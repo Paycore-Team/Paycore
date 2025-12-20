@@ -17,7 +17,7 @@ public class SettlementBatchScheduler {
     private final JobLauncher jobLauncher;
     private final Job settlementJob;
 
-    @Scheduled(cron = "${settlement.batch.cron:0 13 21 * * *}",
+    @Scheduled(cron = "${settlement.batch.cron:0 36 21 * * *}",
             zone = "Asia/Seoul")
     public void runSettlementJob() {
         try {

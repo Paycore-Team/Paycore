@@ -1,0 +1,141 @@
+@startuml
+skinparam linetype ortho
+skinparam packageStyle rectangle
+top to bottom direction
+
+skinparam ranksep 220
+skinparam nodesep 200
+
+title PayCore Deployment Diagram (Docker Compose on Mac M3)
+
+node "MacBook M3\n(Apple Silicon, arm64)" {
+
+
+    node "Docker Network\n(bridge)" {
+
+      ' =========================
+      ' Order Domain
+      ' =========================
+      package "Order Domain" {
+
+        node "order-service\n(Spring Boot)\n:8081" {
+          component OrderService
+        }
+
+        node "order-outbox-worker\n(Spring Boot)\n:9081" {
+          component OrderOutboxWorker
+        }
+
+        node "order-postgres\n(PostgreSQL 16)\n:5432" {
+          database OrderDB
+        }
+      }
+
+      ' =========================
+      ' Payment Domain
+      ' =========================
+      package "Payment Domain" {
+
+        node "payment-service\n(Spring Boot)\n:8082" {
+          component PaymentService
+        }
+
+        node "payment-outbox-worker\n(Spring Boot)\n:9082" {
+          component PaymentOutboxWorker
+        }
+
+        node "payment-postgres\n(PostgreSQL 16)\n:5432" {
+          database PaymentDB
+        }
+      }
+
+      ' =========================
+      ' Settlement Domain
+      ' =========================
+      package "Settlement Domain" {
+
+        node "settlement-service\n(Spring Boot)\n:8084" {
+          component SettlementService
+        }
+
+        node "settlement-postgres\n(PostgreSQL 16)\n:5432" {
+          database SettlementDB
+        }
+      }
+
+      ' =========================
+      ' Notification Domain
+      ' =========================
+      package "Notification Domain" {
+
+        node "notification-service\n(Spring Boot)\n:8083" {
+          component NotificationService
+        }
+
+        node "notification-postgres\n(PostgreSQL 16)\n:5432" {
+          database NotificationDB
+        }
+      }
+
+      ' =========================
+      ' Shared Infrastructure
+      ' =========================
+      package "Shared Infrastructure" {
+
+        node "RabbitMQ\n:5672 / :15672" {
+          component RabbitMQ
+        }
+
+        node "Redis\n:6379" {
+          component Redis
+        }
+      }
+
+      ' =========================
+      ' Observability
+      ' =========================
+      package "Observability" {
+
+        node "Prometheus\n:9090" {
+          component Prometheus
+        }
+
+        node "Grafana\n:3000" {
+          component Grafana
+        }
+      }
+
+      ' =========================
+      ' Connections
+      ' =========================
+      OrderService --> OrderDB
+      OrderOutboxWorker --> OrderDB
+
+      PaymentService --> PaymentDB
+      PaymentOutboxWorker --> PaymentDB
+
+      SettlementService --> SettlementDB
+      NotificationService --> NotificationDB
+
+      OrderService --> RabbitMQ
+      OrderOutboxWorker --> RabbitMQ
+
+      PaymentService --> RabbitMQ
+      PaymentOutboxWorker --> RabbitMQ
+
+      SettlementService --> RabbitMQ
+      NotificationService --> RabbitMQ
+
+      PaymentService --> Redis
+
+      Prometheus --> OrderService
+      Prometheus --> PaymentService
+      Prometheus --> SettlementService
+      Prometheus --> NotificationService
+
+      Grafana --> Prometheus
+    }
+  }
+}
+
+@enduml

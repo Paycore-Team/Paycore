@@ -1,8 +1,11 @@
 @startuml
-title Order-Payment-Settlement-Notification Flow
+title Order-Payment-Settlement-Notification Flow (with Order UseCase)
 
 participant User
-participant Order
+participant OrderController
+participant PlaceOrderUseCase
+participant OrderService
+participant OrderRepository
 participant "Order Outbox DB" as OrderOutboxDB
 participant "Order Outbox Worker" as OrderOutboxWorker
 participant Payment
@@ -18,49 +21,71 @@ participant "Notification Outbox DB" as NotiOutboxDB
 participant "Notification Outbox Worker" as NotiOutboxWorker
 participant "Third Party e.g. FCM" as FCM
 
-' 1~7: Order 도메인 Outbox → RabbitMQ
-User -> Order : 1: 결제 요청
-Order -> OrderOutboxDB : 2: INSERT PaymentRequestedEvent(status=PENDING)
 
-OrderOutboxWorker -> OrderOutboxDB : 3: SELECT status=PENDING
-OrderOutboxDB --> OrderOutboxWorker : 4: Pending events
-OrderOutboxWorker -> RabbitMQ : 5: publish PaymentRequestedEvent
-RabbitMQ --> OrderOutboxWorker : 6: publish success callback
-OrderOutboxWorker -> OrderOutboxDB : 7: UPDATE status=SENT
+User -> OrderController : 0: POST /api/orders 결제 요청
+OrderController -> PlaceOrderUseCase : 1: execute(dto)
+PlaceOrderUseCase -> OrderService : 2: execute(dto)
 
-' 8~16: Payment 도메인(PG 호출) + Outbox → RabbitMQ
-RabbitMQ -> Payment : 8: PaymentRequestedEvent
+activate OrderService
 
-Payment -> PG : 9: 결제 요청
-PG --> Payment : 10: 결제 성공 응답
-Payment -> PayOutboxDB : 11: INSERT PaymentCompletedEvent(status=PENDING)
+OrderService -> OrderRepository : 3: findByIdempotencyKey(dto.key)
+OrderRepository --> OrderService : 4: not exists
+note right of OrderService
+5. save(OrderEntity)
+6. INSERT PaymentRequestedEvent(status=PENDING)
+이벤트 유실 방지를 위해서 같은 트랜잭션으로 저장
+end note
+OrderService -> OrderRepository : 5: save(OrderEntity)
+OrderService -> OrderOutboxDB : 6: INSERT PaymentRequestedEvent(status=PENDING)
 
-PayOutboxWorker -> PayOutboxDB : 12: SELECT status=PENDING
-PayOutboxDB --> PayOutboxWorker : 13: Pending events
-PayOutboxWorker -> RabbitMQ : 14: publish PaymentCompletedEvent
-RabbitMQ --> PayOutboxWorker : 15: publish success callback
-PayOutboxWorker -> PayOutboxDB : 16: UPDATE status=SENT
+deactivate OrderService
 
-' 17~23: Settlement 도메인 Outbox → RabbitMQ
-RabbitMQ -> Settlement : 17: PaymentCompletedEvent
+' ================================
+' 7~13: Order Outbox → RabbitMQ
+' ================================
+OrderOutboxWorker -> OrderOutboxDB : 7: SELECT status=PENDING
+OrderOutboxDB --> OrderOutboxWorker : 8: Pending events
+OrderOutboxWorker -> RabbitMQ : 9: publish PaymentRequestedEvent
+RabbitMQ --> OrderOutboxWorker : 10: publish success callback
+OrderOutboxWorker -> OrderOutboxDB : 11: UPDATE status=SENT
 
-Settlement -> SettleOutboxDB : 18: INSERT SettlementCompletedEvent(status=PENDING)
+' ================================
+' 14~22: Payment 도메인(PG 호출) + Outbox
+' ================================
+RabbitMQ -> Payment : 14: PaymentRequestedEvent
 
-SettlementOutboxWorker -> SettleOutboxDB : 19: SELECT status=PENDING
-SettleOutboxDB --> SettlementOutboxWorker : 20: Pending events
-SettlementOutboxWorker -> RabbitMQ : 21: publish SettlementCompletedEvent
-RabbitMQ --> SettlementOutboxWorker : 22: publish success callback
-SettlementOutboxWorker -> SettleOutboxDB : 23: UPDATE status=SENT
+Payment -> PG : 15: 결제 요청
+PG --> Payment : 16: 결제 성공 응답
+Payment -> PayOutboxDB : 17: INSERT PaymentCompletedEvent(status=PENDING)
 
-' 24~30: Notification 도메인 Outbox → FCM
-RabbitMQ -> Notification : 24: SettlementCompletedEvent
+PayOutboxWorker -> PayOutboxDB : 18: SELECT status=PENDING
+PayOutboxDB --> PayOutboxWorker : 19: Pending events
+PayOutboxWorker -> RabbitMQ : 20: publish PaymentCompletedEvent
+RabbitMQ --> PayOutboxWorker : 21: publish success callback
+PayOutboxWorker -> PayOutboxDB : 22: UPDATE status=SENT
 
-Notification -> NotiOutboxDB : 25: INSERT NotificationRequestedEvent(status=PENDING)
+' ================================
+' 23~29: Settlement 도메인 Outbox
+' ================================
+RabbitMQ -> Settlement : 23: PaymentCompletedEvent
+Settlement -> SettleOutboxDB : 24: INSERT SettlementCompletedEvent(status=PENDING)
 
-NotiOutboxWorker -> NotiOutboxDB : 26: SELECT status=PENDING
-NotiOutboxDB --> NotiOutboxWorker : 27: Pending events
-NotiOutboxWorker -> FCM : 28: 푸시 발송 요청
-FCM --> NotiOutboxWorker : 29: 푸시 발송 성공
-NotiOutboxWorker -> NotiOutboxDB : 30: UPDATE status=SENT
+SettlementOutboxWorker -> SettleOutboxDB : 25: SELECT status=PENDING
+SettleOutboxDB --> SettlementOutboxWorker : 26: Pending events
+SettlementOutboxWorker -> RabbitMQ : 27: publish SettlementCompletedEvent
+RabbitMQ --> SettlementOutboxWorker : 28: publish success callback
+SettlementOutboxWorker -> SettleOutboxDB : 29: UPDATE status=SENT
+
+' ================================
+' 30~36: Notification 도메인 Outbox → FCM
+' ================================
+RabbitMQ -> Notification : 30: SettlementCompletedEvent
+Notification -> NotiOutboxDB : 31: INSERT NotificationRequestedEvent(status=PENDING)
+
+NotiOutboxWorker -> NotiOutboxDB : 32: SELECT status=PENDING
+NotiOutboxDB --> NotiOutboxWorker : 33: Pending events
+NotiOutboxWorker -> FCM : 34: 푸시 발송 요청
+FCM --> NotiOutboxWorker : 35: 푸시 발송 성공
+NotiOutboxWorker -> NotiOutboxDB : 36: UPDATE status=SENT
 
 @enduml
