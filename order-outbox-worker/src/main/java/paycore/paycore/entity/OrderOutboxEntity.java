@@ -2,6 +2,7 @@ package paycore.paycore.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import paycore.paycore.domain.EventType;
 import paycore.paycore.domain.OutboxStatus;
 
 import java.math.BigDecimal;
@@ -22,7 +23,8 @@ public class OrderOutboxEntity {
 
     private UUID sagaId;
 
-    private String eventType;
+    @Enumerated(EnumType.STRING)
+    private EventType eventType;
 
     @Enumerated(EnumType.STRING)
     private OutboxStatus status;

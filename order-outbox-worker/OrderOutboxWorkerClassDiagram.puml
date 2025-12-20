@@ -1,105 +1,87 @@
 @startuml
 skinparam linetype ortho
-skinparam ranksep 80
+skinparam ranksep 120
 skinparam nodesep 80
 
-' ===========================
-' DOMAIN LAYER
-' ===========================
+package "BUSINESS LAYER" as BL {
 
-enum OutboxStatus {
-    PENDING
-    SENT
+  class DebeziumMessageListener {
+      +handler(Message<?> message) : Void
+      -WorkerService workerService
+  }
+
+  class WorkerService {
+      +execute(WorkerRequest input) : Void
+      -RabbitMqPublisher rabbitMqPublisher
+  }
+
+  class RabbitMqPublisher {
+      +publish(String exchange, String routingKey,
+               WorkerRequest input, CorrelationData correlationData) : void
+      -RabbitTemplate rabbitTemplate
+  }
+
+  DebeziumMessageListener --> WorkerService
+  WorkerService --> RabbitMqPublisher
 }
 
-enum EventType {
-    SUCCESS
-    FAILURE
+package "DOMAIN LAYER" as DL {
+
+  enum OutboxStatus {
+      PENDING
+      SENT
+  }
+
+  enum EventType {
+      SUCCESS
+      FAILURE
+  }
+
+  class OrderOutboxEntity {
+      +Long orderId
+      +UUID sagaId
+      +EventType eventType
+      +OutboxStatus status
+      +String apiKey
+      +String productDesc
+      +BigDecimal amount
+      +Long amountTaxFree
+      +LocalDateTime createdAt
+  }
+
+  class WorkerRequest {
+      +Long id
+      +UUID sagaId
+      +EventType eventType
+      +OutboxStatus status
+      +String apiKey
+      +String productDesc
+      +BigDecimal amount
+      +long amountTaxFree
+      +long createdAt
+  }
+
+  class OrderOutboxRecord {
+      +Long orderId()
+      +UUID sagaId()
+      +EventType eventType()
+      +OutboxStatus status()
+      +String apiKey()
+      +String productDesc()
+      +BigDecimal amount()
+      +long amountTaxFree()
+      +long createdAt()
+  }
+
+  WorkerRequest -down-> EventType
+  OrderOutboxRecord -down-> EventType
+  OrderOutboxEntity -down-> EventType
+
+  WorkerRequest -down-> OutboxStatus
+  OrderOutboxRecord -down-> OutboxStatus
+  OrderOutboxEntity-down-> OutboxStatus
 }
 
-class OrderOutboxEntity {
-    +Long orderId
-    +UUID sagaId
-    +String eventType
-    +OutboxStatus status
-    +String apiKey
-    +String productDesc
-    +BigDecimal amount
-    +Long amountTaxFree
-    +LocalDateTime createdAt
-}
-
-' ===========================
-' BUSINESS LAYER
-' ===========================
-
-UseCase -[hidden]d-> WorkerUseCase
-WorkerUseCase -[hidden]d-> WorkerService
-
-' --- Common UseCase ---
-interface UseCase<I, O> {
-    +O execute(I input)
-}
-
-' --- DTO / Request / Record ---
-class WorkerRequest {
-    +Long id
-    +UUID sagaId
-    +EventType eventType
-    +OutboxStatus status
-    +String apiKey
-    +String productDesc
-    +BigDecimal amount
-    +long amountTaxFree
-    +long createdAt
-}
-
-class OrderOutboxRecord {
-    +Long orderId()
-    +UUID sagaId()
-    +EventType eventType()
-    +OutboxStatus status()
-    +String apiKey()
-    +String productDesc()
-    +BigDecimal amount()
-    +long amountTaxFree()
-    +long createdAt()
-}
-
-' --- UseCase Interface ---
-interface WorkerUseCase {
-    +Void execute(WorkerRequest input)
-}
-
-WorkerUseCase -u-|> UseCase
-
-' --- Listener ---
-class DebeziumMessageListener {
-    +handler(Message<?> message) : Void
-    -WorkerUseCase workerUseCase
-}
-
-' --- Service ---
-class WorkerService {
-    +execute(WorkerRequest input) : Void
-    -RabbitMqPublisher rabbitMqPublisher
-}
-
-WorkerService ..|> WorkerUseCase
-
-' --- Messaging Publisher ---
-class RabbitMqPublisher {
-    +publish(String exchange, String routingKey,
-             WorkerRequest input, CorrelationData correlationData) : void
-    -RabbitTemplate rabbitTemplate
-}
-
-' ===========================
-' BUSINESS LAYER RELATIONSHIPS ONLY
-' (도메인 레이어와의 연결은 표기하지 않음)
-' ===========================
-
-DebeziumMessageListener --> WorkerUseCase
-WorkerService --> RabbitMqPublisher
+BL -[hidden]down-> DL
 
 @enduml
